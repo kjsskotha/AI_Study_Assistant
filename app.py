@@ -41,7 +41,10 @@ client = Groq(api_key=api_key)
 
 DATA_FOLDER = "user_data"
 
-os.makedirs(DATA_FOLDER, exist_ok=True)
+os.makedirs(
+    DATA_FOLDER,
+    exist_ok=True
+)
 
 
 # --------------------------------------------------
@@ -66,7 +69,7 @@ STUDY RULES:
 3. Use headings and bullet points.
 4. Use examples when useful.
 5. Be educational and easy to understand.
-6. Remember previous messages in the current conversation.
+6. Remember previous messages in the conversation.
 
 NOTES RULE:
 If study material has been uploaded, use that material as
@@ -78,14 +81,16 @@ is not actually present.
 
 
 # --------------------------------------------------
-# GET OR CREATE USER SESSION ID
+# GET OR CREATE SESSION ID
 # --------------------------------------------------
 
 def get_session_id():
 
     if "session_id" not in session:
 
-        session["session_id"] = str(uuid.uuid4())
+        session["session_id"] = str(
+            uuid.uuid4()
+        )
 
         session.modified = True
 
@@ -93,7 +98,7 @@ def get_session_id():
 
 
 # --------------------------------------------------
-# GET USER DATA FOLDER
+# GET USER FOLDER
 # --------------------------------------------------
 
 def get_user_folder():
@@ -105,13 +110,16 @@ def get_user_folder():
         session_id
     )
 
-    os.makedirs(folder, exist_ok=True)
+    os.makedirs(
+        folder,
+        exist_ok=True
+    )
 
     return folder
 
 
 # --------------------------------------------------
-# CONVERSATION FILE
+# FILE PATHS
 # --------------------------------------------------
 
 def get_conversation_file():
@@ -122,10 +130,6 @@ def get_conversation_file():
     )
 
 
-# --------------------------------------------------
-# NOTES FILE
-# --------------------------------------------------
-
 def get_notes_file():
 
     return os.path.join(
@@ -134,16 +138,21 @@ def get_notes_file():
     )
 
 
+def get_filename_file():
+
+    return os.path.join(
+        get_user_folder(),
+        "filename.txt"
+    )
+
+
 # --------------------------------------------------
-# UPLOADED FILE INFORMATION
+# GET UPLOADED FILE NAME
 # --------------------------------------------------
 
 def get_uploaded_file_name():
 
-    path = os.path.join(
-        get_user_folder(),
-        "filename.txt"
-    )
+    path = get_filename_file()
 
     if os.path.exists(path):
 
@@ -164,10 +173,7 @@ def get_uploaded_file_name():
 
 def save_uploaded_file_name(filename):
 
-    path = os.path.join(
-        get_user_folder(),
-        "filename.txt"
-    )
+    path = get_filename_file()
 
     with open(
         path,
@@ -194,15 +200,12 @@ def save_conversation(conversation):
 
         for message in conversation:
 
-            role = message["role"]
-            content = message["content"]
-
             file.write(
-                role + "\n"
+                message["role"] + "\n"
             )
 
             file.write(
-                content + "\n"
+                message["content"] + "\n"
             )
 
             file.write(
@@ -227,7 +230,9 @@ def load_conversation():
             }
         ]
 
+
     conversation = []
+
 
     with open(
         path,
@@ -264,6 +269,7 @@ def load_conversation():
 
 
         role = lines[0].strip()
+
         content = lines[1].strip()
 
 
@@ -323,6 +329,7 @@ def load_notes():
 
         return ""
 
+
     with open(
         path,
         "r",
@@ -340,20 +347,28 @@ def extract_pdf_text(file_path):
 
     text = ""
 
+
     with open(
         file_path,
         "rb"
     ) as file:
 
-        reader = PyPDF2.PdfReader(file)
+        reader = PyPDF2.PdfReader(
+            file
+        )
+
 
         for page in reader.pages:
 
             page_text = page.extract_text()
 
+
             if page_text:
 
-                text += page_text + "\n"
+                text += (
+                    page_text
+                    + "\n"
+                )
 
 
     return text
@@ -365,22 +380,28 @@ def extract_pdf_text(file_path):
 
 def extract_docx_text(file_path):
 
-    document = Document(file_path)
+    document = Document(
+        file_path
+    )
 
     text = ""
+
 
     for paragraph in document.paragraphs:
 
         if paragraph.text.strip():
 
-            text += paragraph.text + "\n"
+            text += (
+                paragraph.text
+                + "\n"
+            )
 
 
     return text
 
 
 # --------------------------------------------------
-# SELECT EXTRACTION METHOD
+# SELECT TEXT EXTRACTION METHOD
 # --------------------------------------------------
 
 def extract_text(
@@ -394,11 +415,13 @@ def extract_text(
             file_path
         )
 
+
     elif extension == ".docx":
 
         return extract_docx_text(
             file_path
         )
+
 
     return ""
 
@@ -410,7 +433,10 @@ def extract_text(
 @app.route("/")
 def home():
 
-    uploaded_file = get_uploaded_file_name()
+    uploaded_file = (
+        get_uploaded_file_name()
+    )
+
 
     return render_template(
         "index.html",
@@ -452,9 +478,11 @@ def upload():
 
         extension = ".pdf"
 
+
     elif filename.endswith(".docx"):
 
         extension = ".docx"
+
 
     else:
 
@@ -465,7 +493,7 @@ def upload():
         )
 
 
-    # Create temporary uploaded file
+    # Create unique file name
 
     unique_name = (
         str(uuid.uuid4())
@@ -481,9 +509,11 @@ def upload():
 
     try:
 
-        # Save uploaded file
+        # Save file
 
-        file.save(file_path)
+        file.save(
+            file_path
+        )
 
 
         # Extract text
@@ -498,7 +528,10 @@ def upload():
 
         if not extracted_text.strip():
 
-            os.remove(file_path)
+            os.remove(
+                file_path
+            )
+
 
             return render_template(
                 "index.html",
@@ -510,7 +543,7 @@ def upload():
             )
 
 
-        # Save notes separately
+        # Save notes
 
         save_notes(
             extracted_text
@@ -524,7 +557,7 @@ def upload():
         )
 
 
-        # Start a fresh conversation
+        # Start fresh conversation
 
         conversation = [
 
@@ -563,9 +596,13 @@ def upload():
         )
 
 
-        if os.path.exists(file_path):
+        if os.path.exists(
+            file_path
+        ):
 
-            os.remove(file_path)
+            os.remove(
+                file_path
+            )
 
 
         return render_template(
@@ -604,7 +641,9 @@ def ask():
     )
 
 
-    uploaded_file = get_uploaded_file_name()
+    uploaded_file = (
+        get_uploaded_file_name()
+    )
 
 
     # Check question
@@ -615,7 +654,9 @@ def ask():
 
             "index.html",
 
-            answer="Please enter a question or topic.",
+            answer=(
+                "Please enter a question or topic."
+            ),
 
             question="",
 
@@ -627,7 +668,7 @@ def ask():
 
 
     # --------------------------------------------------
-    # STUDY MODES
+    # EXPLAIN MODE
     # --------------------------------------------------
 
     if study_mode == "explain":
@@ -647,6 +688,10 @@ If study material is uploaded,
 use it as the main source.
 """
 
+
+    # --------------------------------------------------
+    # SUMMARIZE MODE
+    # --------------------------------------------------
 
     elif study_mode == "summarize":
 
@@ -670,6 +715,10 @@ summarize mainly from that material.
 """
 
 
+    # --------------------------------------------------
+    # QUIZ MODE
+    # --------------------------------------------------
+
     elif study_mode == "quiz":
 
         instruction = """
@@ -688,6 +737,10 @@ create the questions mainly from that material.
 """
 
 
+    # --------------------------------------------------
+    # DOUBT MODE
+    # --------------------------------------------------
+
     elif study_mode == "doubt":
 
         instruction = """
@@ -703,6 +756,10 @@ If study material is uploaded,
 use it as the main source.
 """
 
+
+    # --------------------------------------------------
+    # NOTES MODE
+    # --------------------------------------------------
 
     elif study_mode == "notes":
 
@@ -739,6 +796,51 @@ uploaded material.
 """
 
 
+    # --------------------------------------------------
+    # FLASHCARDS MODE
+    # --------------------------------------------------
+
+    elif study_mode == "flashcards":
+
+        instruction = """
+The student wants to create AI flashcards
+from their uploaded study material.
+
+Reply in the same language as the student's question.
+
+Create useful study flashcards mainly from
+the uploaded study material.
+
+Each flashcard must contain:
+
+FLASHCARD 1
+
+Question:
+A clear question about an important concept.
+
+Answer:
+A short and accurate answer.
+
+Create around 10 flashcards.
+
+Focus on:
+- Important definitions
+- Important concepts
+- Key facts
+- Important formulas when present
+- Important differences
+- Important points for revision
+
+Keep the answers short and easy to remember.
+
+Do not invent information that is not present
+in the uploaded study material.
+
+If the requested information is not available
+in the notes, clearly say so.
+"""
+
+
     else:
 
         instruction = """
@@ -763,7 +865,7 @@ Reply in the same language as the student's question.
 
 
     # --------------------------------------------------
-    # LIMIT NOTES SENT TO AI
+    # NOTES FOR AI
     # --------------------------------------------------
 
     maximum_document_chars = 50000
@@ -799,14 +901,14 @@ No study material has been uploaded.
 
 Answer the student's question normally.
 
-If the student selected "Ask from My Notes",
+If the student selected a notes-based mode,
 tell them that they need to upload study
 material first.
 """
 
 
     # --------------------------------------------------
-    # ADD CURRENT INSTRUCTIONS
+    # ADD INSTRUCTIONS
     # --------------------------------------------------
 
     conversation.append(
@@ -844,7 +946,7 @@ material first.
 
 
     # --------------------------------------------------
-    # SEND REQUEST TO GROQ
+    # SEND TO GROQ
     # --------------------------------------------------
 
     try:
@@ -919,7 +1021,7 @@ material first.
 
 
 # --------------------------------------------------
-# CLEAR CONVERSATION AND NOTES
+# CLEAR CONVERSATION
 # --------------------------------------------------
 
 @app.route("/clear")
@@ -929,9 +1031,6 @@ def clear():
 
 
     try:
-
-        # Delete everything inside
-        # the current user's folder
 
         for filename in os.listdir(
             user_folder
