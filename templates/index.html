@@ -10,6 +10,12 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
+    <!-- Markdown formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Security for generated HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
 </head>
 
 <body>
@@ -30,19 +36,23 @@
 
             <select name="mode" id="mode">
 
-                <option value="explain">
+                <option value="explain"
+                    {% if selected_mode == "explain" %}selected{% endif %}>
                     Explain a Topic
                 </option>
 
-                <option value="summarize">
+                <option value="summarize"
+                    {% if selected_mode == "summarize" %}selected{% endif %}>
                     Summarize
                 </option>
 
-                <option value="quiz">
+                <option value="quiz"
+                    {% if selected_mode == "quiz" %}selected{% endif %}>
                     Quiz Me
                 </option>
 
-                <option value="doubt">
+                <option value="doubt"
+                    {% if selected_mode == "doubt" %}selected{% endif %}>
                     Ask a Doubt
                 </option>
 
@@ -52,11 +62,15 @@
                 name="question"
                 placeholder="Enter your topic or question..."
                 required
-            ></textarea>
+            >{{ question if question else "" }}</textarea>
 
             <button type="submit">
                 Ask AI
             </button>
+
+            <a href="/clear" class="clear-button">
+                Clear Conversation
+            </a>
 
         </form>
 
@@ -74,11 +88,26 @@
 
             <hr>
 
-            <div class="ai-answer">
-                {{ answer }}
-            </div>
+            <!-- AI answer will be converted from Markdown -->
+            <div id="ai-answer" class="ai-answer"></div>
+
+            <!-- Store the AI answer safely -->
+            <script id="answer-data" type="text/plain">{{ answer }}</script>
 
         </div>
+
+        <script>
+
+            const rawAnswer =
+                document.getElementById("answer-data").textContent;
+
+            const formattedAnswer =
+                marked.parse(rawAnswer);
+
+            document.getElementById("ai-answer").innerHTML =
+                DOMPurify.sanitize(formattedAnswer);
+
+        </script>
 
         {% endif %}
 
