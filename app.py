@@ -9,30 +9,45 @@ from docx import Document
 app = Flask(__name__)
 
 
-# Flask secret key
+# --------------------------------------------------
+# FLASK SECRET KEY
+# --------------------------------------------------
+
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "change-this-secret-key"
 )
 
 
-# Maximum upload size: 10 MB
+# --------------------------------------------------
+# FILE UPLOAD SETTINGS
+# --------------------------------------------------
+
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 
-# Groq API
+# --------------------------------------------------
+# GROQ API
+# --------------------------------------------------
+
 api_key = os.environ.get("GROQ_API_KEY")
 
 client = Groq(api_key=api_key)
 
 
-# Upload folder
-UPLOAD_FOLDER = "uploads"
+# --------------------------------------------------
+# SERVER STORAGE
+# --------------------------------------------------
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+DATA_FOLDER = "user_data"
+
+os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
-# Main AI instructions
+# --------------------------------------------------
+# MAIN AI INSTRUCTIONS
+# --------------------------------------------------
+
 system_instruction = """
 You are an AI Study Assistant for students.
 
@@ -51,7 +66,7 @@ STUDY RULES:
 3. Use headings and bullet points.
 4. Use examples when useful.
 5. Be educational and easy to understand.
-6. Remember previous messages in the conversation.
+6. Remember previous messages in the current conversation.
 
 NOTES RULE:
 If study material has been uploaded, use that material as
@@ -63,6 +78,261 @@ is not actually present.
 
 
 # --------------------------------------------------
+# GET OR CREATE USER SESSION ID
+# --------------------------------------------------
+
+def get_session_id():
+
+    if "session_id" not in session:
+
+        session["session_id"] = str(uuid.uuid4())
+
+        session.modified = True
+
+    return session["session_id"]
+
+
+# --------------------------------------------------
+# GET USER DATA FOLDER
+# --------------------------------------------------
+
+def get_user_folder():
+
+    session_id = get_session_id()
+
+    folder = os.path.join(
+        DATA_FOLDER,
+        session_id
+    )
+
+    os.makedirs(folder, exist_ok=True)
+
+    return folder
+
+
+# --------------------------------------------------
+# CONVERSATION FILE
+# --------------------------------------------------
+
+def get_conversation_file():
+
+    return os.path.join(
+        get_user_folder(),
+        "conversation.txt"
+    )
+
+
+# --------------------------------------------------
+# NOTES FILE
+# --------------------------------------------------
+
+def get_notes_file():
+
+    return os.path.join(
+        get_user_folder(),
+        "notes.txt"
+    )
+
+
+# --------------------------------------------------
+# UPLOADED FILE INFORMATION
+# --------------------------------------------------
+
+def get_uploaded_file_name():
+
+    path = os.path.join(
+        get_user_folder(),
+        "filename.txt"
+    )
+
+    if os.path.exists(path):
+
+        with open(
+            path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            return file.read()
+
+    return None
+
+
+# --------------------------------------------------
+# SAVE UPLOADED FILE NAME
+# --------------------------------------------------
+
+def save_uploaded_file_name(filename):
+
+    path = os.path.join(
+        get_user_folder(),
+        "filename.txt"
+    )
+
+    with open(
+        path,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        file.write(filename)
+
+
+# --------------------------------------------------
+# SAVE CONVERSATION
+# --------------------------------------------------
+
+def save_conversation(conversation):
+
+    path = get_conversation_file()
+
+    with open(
+        path,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        for message in conversation:
+
+            role = message["role"]
+            content = message["content"]
+
+            file.write(
+                role + "\n"
+            )
+
+            file.write(
+                content + "\n"
+            )
+
+            file.write(
+                "-----MESSAGE-END-----\n"
+            )
+
+
+# --------------------------------------------------
+# LOAD CONVERSATION
+# --------------------------------------------------
+
+def load_conversation():
+
+    path = get_conversation_file()
+
+    if not os.path.exists(path):
+
+        return [
+            {
+                "role": "system",
+                "content": system_instruction
+            }
+        ]
+
+    conversation = []
+
+    with open(
+        path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        data = file.read()
+
+
+    blocks = data.split(
+        "-----MESSAGE-END-----"
+    )
+
+
+    for block in blocks:
+
+        block = block.strip()
+
+        if not block:
+
+            continue
+
+
+        lines = block.split(
+            "\n",
+            1
+        )
+
+
+        if len(lines) != 2:
+
+            continue
+
+
+        role = lines[0].strip()
+        content = lines[1].strip()
+
+
+        if role in [
+            "system",
+            "user",
+            "assistant"
+        ]:
+
+            conversation.append(
+                {
+                    "role": role,
+                    "content": content
+                }
+            )
+
+
+    if not conversation:
+
+        conversation = [
+            {
+                "role": "system",
+                "content": system_instruction
+            }
+        ]
+
+
+    return conversation
+
+
+# --------------------------------------------------
+# SAVE NOTES
+# --------------------------------------------------
+
+def save_notes(text):
+
+    path = get_notes_file()
+
+    with open(
+        path,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        file.write(text)
+
+
+# --------------------------------------------------
+# LOAD NOTES
+# --------------------------------------------------
+
+def load_notes():
+
+    path = get_notes_file()
+
+    if not os.path.exists(path):
+
+        return ""
+
+    with open(
+        path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        return file.read()
+
+
+# --------------------------------------------------
 # PDF TEXT EXTRACTION
 # --------------------------------------------------
 
@@ -70,7 +340,10 @@ def extract_pdf_text(file_path):
 
     text = ""
 
-    with open(file_path, "rb") as file:
+    with open(
+        file_path,
+        "rb"
+    ) as file:
 
         reader = PyPDF2.PdfReader(file)
 
@@ -81,6 +354,7 @@ def extract_pdf_text(file_path):
             if page_text:
 
                 text += page_text + "\n"
+
 
     return text
 
@@ -101,6 +375,7 @@ def extract_docx_text(file_path):
 
             text += paragraph.text + "\n"
 
+
     return text
 
 
@@ -108,15 +383,22 @@ def extract_docx_text(file_path):
 # SELECT EXTRACTION METHOD
 # --------------------------------------------------
 
-def extract_text(file_path, extension):
+def extract_text(
+    file_path,
+    extension
+):
 
     if extension == ".pdf":
 
-        return extract_pdf_text(file_path)
+        return extract_pdf_text(
+            file_path
+        )
 
     elif extension == ".docx":
 
-        return extract_docx_text(file_path)
+        return extract_docx_text(
+            file_path
+        )
 
     return ""
 
@@ -128,19 +410,12 @@ def extract_text(file_path, extension):
 @app.route("/")
 def home():
 
-    if "conversation" not in session:
-
-        session["conversation"] = [
-            {
-                "role": "system",
-                "content": system_instruction
-            }
-        ]
+    uploaded_file = get_uploaded_file_name()
 
     return render_template(
         "index.html",
         answer=None,
-        uploaded_file=session.get("uploaded_file")
+        uploaded_file=uploaded_file
     )
 
 
@@ -148,17 +423,23 @@ def home():
 # UPLOAD STUDY MATERIAL
 # --------------------------------------------------
 
-@app.route("/upload", methods=["POST"])
+@app.route(
+    "/upload",
+    methods=["POST"]
+)
 def upload():
 
-    file = request.files.get("study_file")
+    file = request.files.get(
+        "study_file"
+    )
+
 
     if not file or file.filename == "":
 
         return render_template(
             "index.html",
             answer="Please select a PDF or DOCX file.",
-            uploaded_file=None
+            uploaded_file=get_uploaded_file_name()
         )
 
 
@@ -180,23 +461,27 @@ def upload():
         return render_template(
             "index.html",
             answer="Only PDF and DOCX files are supported.",
-            uploaded_file=None
+            uploaded_file=get_uploaded_file_name()
         )
 
 
-    # Unique file name
+    # Create temporary uploaded file
 
-    unique_name = str(uuid.uuid4()) + extension
+    unique_name = (
+        str(uuid.uuid4())
+        + extension
+    )
+
 
     file_path = os.path.join(
-        UPLOAD_FOLDER,
+        get_user_folder(),
         unique_name
     )
 
 
     try:
 
-        # Save file
+        # Save uploaded file
 
         file.save(file_path)
 
@@ -209,7 +494,7 @@ def upload():
         )
 
 
-        # Check text
+        # Check extracted text
 
         if not extracted_text.strip():
 
@@ -225,18 +510,23 @@ def upload():
             )
 
 
-        # Save information
+        # Save notes separately
 
-        session["uploaded_file"] = file.filename
-
-        session["uploaded_path"] = file_path
-
-        session["document_text"] = extracted_text
+        save_notes(
+            extracted_text
+        )
 
 
-        # Start fresh conversation
+        # Save original file name
 
-        session["conversation"] = [
+        save_uploaded_file_name(
+            file.filename
+        )
+
+
+        # Start a fresh conversation
+
+        conversation = [
 
             {
                 "role": "system",
@@ -245,22 +535,32 @@ def upload():
 
         ]
 
-        session.modified = True
+
+        save_conversation(
+            conversation
+        )
 
 
         return render_template(
+
             "index.html",
+
             answer=(
                 "Your study material was uploaded successfully. "
                 "You can now ask questions about it."
             ),
+
             uploaded_file=file.filename
+
         )
 
 
     except Exception as error:
 
-        print("File Error:", error)
+        print(
+            "File Error:",
+            error
+        )
 
 
         if os.path.exists(file_path):
@@ -269,12 +569,16 @@ def upload():
 
 
         return render_template(
+
             "index.html",
+
             answer=(
                 "There was a problem processing the file. "
                 "Please try another file."
             ),
+
             uploaded_file=None
+
         )
 
 
@@ -282,7 +586,10 @@ def upload():
 # ASK AI
 # --------------------------------------------------
 
-@app.route("/ask", methods=["POST"])
+@app.route(
+    "/ask",
+    methods=["POST"]
+)
 def ask():
 
     user_question = request.form.get(
@@ -297,19 +604,30 @@ def ask():
     )
 
 
+    uploaded_file = get_uploaded_file_name()
+
+
+    # Check question
+
     if not user_question:
 
         return render_template(
+
             "index.html",
+
             answer="Please enter a question or topic.",
+
             question="",
+
             selected_mode=study_mode,
-            uploaded_file=session.get("uploaded_file")
+
+            uploaded_file=uploaded_file
+
         )
 
 
     # --------------------------------------------------
-    # STUDY MODE INSTRUCTIONS
+    # STUDY MODES
     # --------------------------------------------------
 
     if study_mode == "explain":
@@ -325,7 +643,8 @@ Use:
 - Bullet points
 - Examples when useful
 
-If study material is uploaded, use it as the main source.
+If study material is uploaded,
+use it as the main source.
 """
 
 
@@ -345,6 +664,9 @@ Include:
 Use headings and bullet points.
 
 Keep the summary easy to revise.
+
+If study material is uploaded,
+summarize mainly from that material.
 """
 
 
@@ -391,27 +713,29 @@ Reply in the same language as the student's question.
 
 Use the uploaded study material as the MAIN SOURCE.
 
-If the student asks:
+If the student asks for:
 
-"Generate important exam questions"
+- Important exam questions
+- Important topics
+- Important definitions
+- Revision questions
+- Exam preparation
+- Questions from my notes
 
-or similar, create useful exam-oriented questions
-based ONLY on the uploaded study material.
+Create the response mainly from the uploaded material.
 
-Organize them clearly into:
+For exam questions, organize them into:
 
 1. Very Short Answer Questions
 2. Short Answer Questions
 3. Long Answer Questions
 
-If suitable, also include important definitions,
-concepts and topics that students should revise.
-
-Do not invent topics that are not present in the
-uploaded study material.
+Do not invent topics that are not present
+in the uploaded study material.
 
 If something is not available in the notes,
-clearly say that it is not found in the uploaded material.
+clearly say that it is not found in the
+uploaded material.
 """
 
 
@@ -425,31 +749,22 @@ Reply in the same language as the student's question.
 
 
     # --------------------------------------------------
-    # GET CONVERSATION
+    # LOAD CONVERSATION
     # --------------------------------------------------
 
-    conversation = session.get(
-        "conversation",
-        [
-            {
-                "role": "system",
-                "content": system_instruction
-            }
-        ]
-    )
+    conversation = load_conversation()
 
 
     # --------------------------------------------------
-    # GET UPLOADED NOTES
+    # LOAD NOTES
     # --------------------------------------------------
 
-    document_text = session.get(
-        "document_text",
-        ""
-    )
+    document_text = load_notes()
 
 
-    # Maximum notes sent to AI
+    # --------------------------------------------------
+    # LIMIT NOTES SENT TO AI
+    # --------------------------------------------------
 
     maximum_document_chars = 50000
 
@@ -466,8 +781,8 @@ The student has uploaded study material.
 
 Use this material as the main source.
 
-Do not claim that information is in the material
-if it is not actually present.
+Do not claim that information is in the
+material if it is not actually present.
 
 ----- BEGIN STUDY MATERIAL -----
 
@@ -482,45 +797,54 @@ if it is not actually present.
         notes_instruction = """
 No study material has been uploaded.
 
-Answer normally.
+Answer the student's question normally.
 
 If the student selected "Ask from My Notes",
-tell them that they need to upload study material first.
+tell them that they need to upload study
+material first.
 """
 
 
     # --------------------------------------------------
-    # ADD INSTRUCTIONS
+    # ADD CURRENT INSTRUCTIONS
     # --------------------------------------------------
 
     conversation.append(
+
         {
             "role": "system",
             "content": instruction
         }
+
     )
 
 
     conversation.append(
+
         {
             "role": "system",
             "content": notes_instruction
         }
-    )
 
-
-    # Add question
-
-    conversation.append(
-        {
-            "role": "user",
-            "content": user_question
-        }
     )
 
 
     # --------------------------------------------------
-    # SEND TO GROQ
+    # ADD USER QUESTION
+    # --------------------------------------------------
+
+    conversation.append(
+
+        {
+            "role": "user",
+            "content": user_question
+        }
+
+    )
+
+
+    # --------------------------------------------------
+    # SEND REQUEST TO GROQ
     # --------------------------------------------------
 
     try:
@@ -534,12 +858,20 @@ tell them that they need to upload study material first.
         )
 
 
-        answer = response.choices[0].message.content
+        answer = (
+            response
+            .choices[0]
+            .message
+            .content
+        )
 
 
     except Exception as error:
 
-        print("Groq Error:", error)
+        print(
+            "Groq Error:",
+            error
+        )
 
 
         answer = (
@@ -553,16 +885,18 @@ tell them that they need to upload study material first.
     # --------------------------------------------------
 
     conversation.append(
+
         {
             "role": "assistant",
             "content": answer
         }
+
     )
 
 
-    session["conversation"] = conversation
-
-    session.modified = True
+    save_conversation(
+        conversation
+    )
 
 
     # --------------------------------------------------
@@ -579,40 +913,56 @@ tell them that they need to upload study material first.
 
         selected_mode=study_mode,
 
-        uploaded_file=session.get("uploaded_file")
+        uploaded_file=uploaded_file
 
     )
 
 
 # --------------------------------------------------
-# CLEAR CONVERSATION
+# CLEAR CONVERSATION AND NOTES
 # --------------------------------------------------
 
 @app.route("/clear")
 def clear():
 
-    uploaded_path = session.get(
-        "uploaded_path"
-    )
+    user_folder = get_user_folder()
 
 
-    if uploaded_path:
+    try:
 
-        try:
+        # Delete everything inside
+        # the current user's folder
 
-            if os.path.exists(uploaded_path):
+        for filename in os.listdir(
+            user_folder
+        ):
 
-                os.remove(uploaded_path)
-
-        except Exception as error:
-
-            print("File Delete Error:", error)
-
-
-    session.clear()
+            file_path = os.path.join(
+                user_folder,
+                filename
+            )
 
 
-    session["conversation"] = [
+            if os.path.isfile(
+                file_path
+            ):
+
+                os.remove(
+                    file_path
+                )
+
+
+    except Exception as error:
+
+        print(
+            "Clear Error:",
+            error
+        )
+
+
+    # Create fresh conversation
+
+    conversation = [
 
         {
             "role": "system",
@@ -621,13 +971,20 @@ def clear():
 
     ]
 
-    session.modified = True
+
+    save_conversation(
+        conversation
+    )
 
 
     return render_template(
+
         "index.html",
+
         answer=None,
+
         uploaded_file=None
+
     )
 
 
@@ -647,15 +1004,13 @@ def file_too_large(error):
             "Maximum allowed size is 10 MB."
         ),
 
-        uploaded_file=session.get(
-            "uploaded_file"
-        )
+        uploaded_file=get_uploaded_file_name()
 
     ), 413
 
 
 # --------------------------------------------------
-# RUN APP
+# RUN APPLICATION
 # --------------------------------------------------
 
 if __name__ == "__main__":
