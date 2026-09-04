@@ -1,32 +1,62 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>AI Study Assistant</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
 </head>
+
 
 <body>
 
+
 <div class="page-container">
 
-    <!-- HEADER -->
+
+    <!-- =========================================
+         HEADER
+    ========================================== -->
+
     <header class="top-header">
 
         <div class="brand">
-            <div class="brand-icon">🤖</div>
+
+            <div class="brand-icon">
+                🤖
+            </div>
 
             <div>
-                <h1>AI Study Assistant</h1>
-                <p>Your smart learning companion</p>
+
+                <h1>
+                    AI Study Assistant
+                </h1>
+
+                <p>
+                    Your smart learning companion
+                </p>
+
             </div>
+
         </div>
+
 
         <div class="ai-badge">
             ● AI Powered
@@ -35,7 +65,11 @@
     </header>
 
 
-    <!-- HERO -->
+
+    <!-- =========================================
+         HERO
+    ========================================== -->
+
     <section class="hero">
 
         <div class="hero-content">
@@ -44,14 +78,24 @@
                 📚 Learn Smarter
             </div>
 
+
             <h2>
+
                 Study better with your
-                <span>AI Assistant</span>
+
+                <span>
+                    AI Assistant
+                </span>
+
             </h2>
 
+
             <p>
-                Ask questions, analyze your notes, create quizzes,
-                generate flashcards, and build personalized study plans.
+
+                Ask questions, analyze your notes,
+                create quizzes, generate flashcards,
+                and build personalized study plans.
+
             </p>
 
         </div>
@@ -59,23 +103,286 @@
     </section>
 
 
-    <!-- STUDY MODES -->
-    <section class="section">
 
-        <div class="section-title">
+    <!-- =========================================
+         PROGRESS DASHBOARD
+    ========================================== -->
+
+    <section class="progress-dashboard">
+
+        <div class="progress-dashboard-header">
 
             <div>
-                <h2>Choose Study Mode</h2>
-                <p>Select how you want the AI to help you.</p>
+
+                <div class="progress-badge">
+                    📊 Your Progress
+                </div>
+
+                <h2>
+                    Study Progress Dashboard
+                </h2>
+
+                <p>
+                    Track your learning activity and
+                    keep improving every day.
+                </p>
+
             </div>
 
         </div>
 
 
+        <div class="progress-grid">
+
+
+            <!-- QUESTIONS -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    💬
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Questions Asked
+                    </span>
+
+                    <strong>
+                        {{ progress.questions_asked }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- NOTES -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    📚
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Notes Uploaded
+                    </span>
+
+                    <strong>
+                        {{ progress.notes_uploaded }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- QUIZ ATTEMPTS -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    🎯
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Quiz Attempts
+                    </span>
+
+                    <strong>
+                        {{ progress.quiz_attempts }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- CORRECT ANSWERS -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    ✅
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Correct Answers
+                    </span>
+
+                    <strong>
+                        {{ progress.quiz_correct }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- FLASHCARDS -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    🃏
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Flashcard Sets
+                    </span>
+
+                    <strong>
+                        {{ progress.flashcard_sets }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- TOTAL QUIZ QUESTIONS -->
+
+            <div class="progress-card">
+
+                <div class="progress-icon">
+                    📝
+                </div>
+
+                <div class="progress-info">
+
+                    <span>
+                        Quiz Questions
+                    </span>
+
+                    <strong>
+                        {{ progress.quiz_questions }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- QUIZ ACCURACY -->
+
+        <div class="accuracy-section">
+
+            <div class="accuracy-header">
+
+                <span>
+                    🎯 Quiz Accuracy
+                </span>
+
+                {% if progress.quiz_questions > 0 %}
+
+                    <strong>
+                        {{
+                            (
+                                progress.quiz_correct
+                                / progress.quiz_questions
+                                * 100
+                            ) | round(0)
+                        }}%
+                    </strong>
+
+                {% else %}
+
+                    <strong>
+                        0%
+                    </strong>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="progress-bar">
+
+                {% if progress.quiz_questions > 0 %}
+
+                    {% set accuracy =
+                        (
+                            progress.quiz_correct
+                            / progress.quiz_questions
+                            * 100
+                        )
+                    %}
+
+                {% else %}
+
+                    {% set accuracy = 0 %}
+
+                {% endif %}
+
+
+                <div
+                    class="progress-bar-fill"
+                    style="width: {{ accuracy }}%;"
+                >
+                </div>
+
+            </div>
+
+
+            <p>
+                Keep practicing to improve your score.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =========================================
+         STUDY MODES
+    ========================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    Choose Study Mode
+                </h2>
+
+                <p>
+                    Select how you want the AI to help you.
+                </p>
+
+            </div>
+
+        </div>
+
+
+
         <div class="mode-grid">
 
+
             <!-- EXPLAIN -->
+
             <label class="mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -85,11 +392,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon">💡</div>
+                    <div class="mode-icon">
+                        💡
+                    </div>
 
                     <div>
-                        <strong>Explain</strong>
-                        <span>Understand difficult concepts</span>
+
+                        <strong>
+                            Explain
+                        </strong>
+
+                        <span>
+                            Understand difficult concepts
+                        </span>
+
                     </div>
 
                 </div>
@@ -97,8 +413,11 @@
             </label>
 
 
+
             <!-- SUMMARIZE -->
+
             <label class="mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -107,11 +426,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon">📝</div>
+                    <div class="mode-icon">
+                        📝
+                    </div>
 
                     <div>
-                        <strong>Summarize</strong>
-                        <span>Get important points quickly</span>
+
+                        <strong>
+                            Summarize
+                        </strong>
+
+                        <span>
+                            Get important points quickly
+                        </span>
+
                     </div>
 
                 </div>
@@ -119,8 +447,11 @@
             </label>
 
 
+
             <!-- QUIZ ME -->
+
             <label class="mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -129,11 +460,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon">🧠</div>
+                    <div class="mode-icon">
+                        🧠
+                    </div>
 
                     <div>
-                        <strong>Quiz Me</strong>
-                        <span>Practice with AI questions</span>
+
+                        <strong>
+                            Quiz Me
+                        </strong>
+
+                        <span>
+                            Practice with AI questions
+                        </span>
+
                     </div>
 
                 </div>
@@ -141,8 +481,11 @@
             </label>
 
 
+
             <!-- ASK DOUBT -->
+
             <label class="mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -151,11 +494,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon">❓</div>
+                    <div class="mode-icon">
+                        ❓
+                    </div>
 
                     <div>
-                        <strong>Ask a Doubt</strong>
-                        <span>Clear your questions</span>
+
+                        <strong>
+                            Ask a Doubt
+                        </strong>
+
+                        <span>
+                            Clear your questions
+                        </span>
+
                     </div>
 
                 </div>
@@ -163,8 +515,11 @@
             </label>
 
 
+
             <!-- NOTES -->
+
             <label class="mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -173,11 +528,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon">📖</div>
+                    <div class="mode-icon">
+                        📖
+                    </div>
 
                     <div>
-                        <strong>Ask from My Notes</strong>
-                        <span>Study directly from uploaded notes</span>
+
+                        <strong>
+                            Ask from My Notes
+                        </strong>
+
+                        <span>
+                            Study directly from uploaded notes
+                        </span>
+
                     </div>
 
                 </div>
@@ -185,8 +549,11 @@
             </label>
 
 
+
             <!-- STUDY PLAN -->
+
             <label class="mode-card studyplan-mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -195,11 +562,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon studyplan-icon">📅</div>
+                    <div class="mode-icon studyplan-icon">
+                        📅
+                    </div>
 
                     <div>
-                        <strong>Study Plan</strong>
-                        <span>Create a personalized plan</span>
+
+                        <strong>
+                            Study Plan
+                        </strong>
+
+                        <span>
+                            Create a personalized plan
+                        </span>
+
                     </div>
 
                 </div>
@@ -207,8 +583,11 @@
             </label>
 
 
+
             <!-- FLASHCARDS -->
+
             <label class="mode-card flashcards-mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -217,11 +596,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon flashcards-icon">🃏</div>
+                    <div class="mode-icon flashcards-icon">
+                        🃏
+                    </div>
 
                     <div>
-                        <strong>Flashcards</strong>
-                        <span>Flip cards for quick revision</span>
+
+                        <strong>
+                            Flashcards
+                        </strong>
+
+                        <span>
+                            Flip cards for quick revision
+                        </span>
+
                     </div>
 
                 </div>
@@ -229,8 +617,11 @@
             </label>
 
 
+
             <!-- INTERACTIVE QUIZ -->
+
             <label class="mode-card quiz-mode-card">
+
                 <input
                     type="radio"
                     name="mode-select"
@@ -239,11 +630,20 @@
 
                 <div class="mode-content">
 
-                    <div class="mode-icon quiz-icon">🎯</div>
+                    <div class="mode-icon quiz-icon">
+                        🎯
+                    </div>
 
                     <div>
-                        <strong>Interactive Quiz</strong>
-                        <span>Test yourself with MCQs</span>
+
+                        <strong>
+                            Interactive Quiz
+                        </strong>
+
+                        <span>
+                            Test yourself with MCQs
+                        </span>
+
                     </div>
 
                 </div>
@@ -255,21 +655,32 @@
     </section>
 
 
-    <!-- UPLOAD NOTES -->
+
+    <!-- =========================================
+         UPLOAD NOTES
+    ========================================== -->
+
     <section class="upload-section">
 
         <div class="upload-header">
 
             <div>
-                <h2>📂 Upload Study Material</h2>
+
+                <h2>
+                    📂 Upload Study Material
+                </h2>
 
                 <p>
-                    Upload your PDF or DOCX notes and let the AI
-                    use them for studying.
+
+                    Upload your PDF or DOCX notes
+                    and let the AI use them for studying.
+
                 </p>
+
             </div>
 
         </div>
+
 
 
         <form
@@ -306,15 +717,25 @@
         </form>
 
 
+
         {% if filename %}
 
         <div class="notes-status">
 
-            <span>✅</span>
+            <span>
+                ✅
+            </span>
 
             <div>
-                <strong>{{ filename }}</strong>
-                <p>Your study material is ready.</p>
+
+                <strong>
+                    {{ filename }}
+                </strong>
+
+                <p>
+                    Your study material is ready.
+                </p>
+
             </div>
 
         </div>
@@ -324,7 +745,11 @@
     </section>
 
 
-    <!-- NORMAL QUESTION AREA -->
+
+    <!-- =========================================
+         NORMAL QUESTION
+    ========================================== -->
+
     <section
         class="question-section"
         id="normal-question-section"
@@ -333,14 +758,19 @@
         <div class="section-title">
 
             <div>
-                <h2>💬 Ask Your Question</h2>
+
+                <h2>
+                    💬 Ask Your Question
+                </h2>
 
                 <p>
                     Type your question and let the AI help you.
                 </p>
+
             </div>
 
         </div>
+
 
 
         <form
@@ -374,6 +804,7 @@
                         💡 Ask anything related to your studies
                     </span>
 
+
                     <button
                         type="submit"
                         class="ask-button"
@@ -390,7 +821,11 @@
     </section>
 
 
-    <!-- FLASHCARD GENERATOR -->
+
+    <!-- =========================================
+         FLASHCARD GENERATOR
+    ========================================== -->
+
     <section
         class="flashcard-generator"
         id="flashcard-generator"
@@ -400,14 +835,19 @@
         <div class="section-title">
 
             <div>
-                <h2>🃏 Generate Flashcards</h2>
+
+                <h2>
+                    🃏 Generate Flashcards
+                </h2>
 
                 <p>
                     Create 10 interactive flashcards for quick revision.
                 </p>
+
             </div>
 
         </div>
+
 
 
         <form
@@ -436,7 +876,11 @@
     </section>
 
 
-    <!-- INTERACTIVE FLASHCARDS -->
+
+    <!-- =========================================
+         INTERACTIVE FLASHCARDS
+    ========================================== -->
+
     {% if flashcards %}
 
     <section
@@ -461,16 +905,25 @@
         </div>
 
 
+
         <div class="flashcard-counter">
-            Card <span id="flashcard-current">1</span>
+
+            Card
+
+            <span id="flashcard-current">
+                1
+            </span>
+
             /
+
             <span id="flashcard-total">
                 {{ flashcards.cards|length }}
             </span>
+
         </div>
 
 
-        <!-- CARD -->
+
         <div
             class="flashcard-wrapper"
             id="flashcard-wrapper"
@@ -483,17 +936,22 @@
 
                 <div class="flashcard-inner">
 
+
                     <!-- FRONT -->
+
                     <div class="flashcard-face flashcard-front">
 
                         <div class="flashcard-label">
                             QUESTION
                         </div>
 
+
                         <div
                             class="flashcard-text"
                             id="flashcard-question"
-                        ></div>
+                        >
+                        </div>
+
 
                         <div class="flip-hint">
                             👆 Click to reveal answer
@@ -502,17 +960,22 @@
                     </div>
 
 
+
                     <!-- BACK -->
+
                     <div class="flashcard-face flashcard-back">
 
                         <div class="flashcard-label">
                             ANSWER
                         </div>
 
+
                         <div
                             class="flashcard-text"
                             id="flashcard-answer"
-                        ></div>
+                        >
+                        </div>
+
 
                         <div class="flip-hint">
                             👆 Click to see question
@@ -527,7 +990,9 @@
         </div>
 
 
+
         <!-- CONTROLS -->
+
         <div class="flashcard-controls">
 
             <button
@@ -559,7 +1024,7 @@
         </div>
 
 
-        <!-- REGENERATE -->
+
         <div class="flashcard-regenerate">
 
             <form
@@ -572,6 +1037,7 @@
                     name="flashcard_topic"
                     value="the uploaded study material"
                 >
+
 
                 <button
                     type="submit"
@@ -589,7 +1055,11 @@
     {% endif %}
 
 
-    <!-- QUIZ GENERATOR -->
+
+    <!-- =========================================
+         QUIZ GENERATOR
+    ========================================== -->
+
     <section
         class="quiz-generator"
         id="quiz-generator"
@@ -600,7 +1070,9 @@
 
             <div>
 
-                <h2>🎯 Generate Interactive Quiz</h2>
+                <h2>
+                    🎯 Generate Interactive Quiz
+                </h2>
 
                 <p>
                     Create a 5-question multiple-choice quiz.
@@ -609,6 +1081,7 @@
             </div>
 
         </div>
+
 
 
         <form
@@ -637,7 +1110,11 @@
     </section>
 
 
-    <!-- INTERACTIVE QUIZ -->
+
+    <!-- =========================================
+         INTERACTIVE QUIZ
+    ========================================== -->
+
     {% if quiz %}
 
     <section
@@ -662,7 +1139,9 @@
         </div>
 
 
+
         {% if quiz.result %}
+
 
         <!-- QUIZ RESULT -->
 
@@ -670,15 +1149,22 @@
 
             <div class="score-box">
 
-                <span>Your Score</span>
+                <span>
+                    Your Score
+                </span>
 
                 <strong>
+
                     {{ quiz.result.score }}
+
                     /
+
                     {{ quiz.result.total }}
+
                 </strong>
 
             </div>
+
 
 
             {% for result in quiz.result.results %}
@@ -686,9 +1172,13 @@
             <div class="quiz-result-question">
 
                 <h3>
+
                     {{ loop.index }}.
+
                     {{ result.question }}
+
                 </h3>
+
 
 
                 {% if result.is_correct %}
@@ -706,24 +1196,37 @@
                 {% endif %}
 
 
+
                 <div class="answer-info">
 
                     <p>
-                        <strong>Correct:</strong>
+
+                        <strong>
+                            Correct:
+                        </strong>
+
                         {{ result.options[result.correct] }}
+
                     </p>
+
 
 
                     {% if result.selected is not none %}
 
                     <p>
-                        <strong>Your Answer:</strong>
+
+                        <strong>
+                            Your Answer:
+                        </strong>
+
                         {{ result.options[result.selected|int] }}
+
                     </p>
 
                     {% endif %}
 
                 </div>
+
 
 
                 {% if result.explanation %}
@@ -741,6 +1244,7 @@
             {% endfor %}
 
 
+
             <form
                 action="{{ url_for('generate_quiz') }}"
                 method="POST"
@@ -751,6 +1255,7 @@
                     name="quiz_topic"
                     value="the uploaded study material"
                 >
+
 
                 <button
                     type="submit"
@@ -766,6 +1271,7 @@
 
         {% else %}
 
+
         <!-- QUIZ QUESTIONS -->
 
         <form
@@ -777,12 +1283,17 @@
 
             {% set question_number = loop.index0 %}
 
+
             <div class="quiz-question">
 
                 <h3>
+
                     {{ loop.index }}.
+
                     {{ question.question }}
+
                 </h3>
+
 
 
                 <div class="quiz-options">
@@ -798,9 +1309,13 @@
                             required
                         >
 
+
                         <span class="option-letter">
+
                             {{ ["A", "B", "C", "D"][loop.index0] }}
+
                         </span>
+
 
                         <span>
                             {{ option }}
@@ -815,6 +1330,7 @@
             </div>
 
             {% endfor %}
+
 
 
             <button
@@ -833,7 +1349,11 @@
     {% endif %}
 
 
-    <!-- AI RESPONSE / CONVERSATION -->
+
+    <!-- =========================================
+         AI CONVERSATION
+    ========================================== -->
+
     {% if conversation %}
 
     <section class="response-section">
@@ -842,13 +1362,16 @@
 
             <div>
 
-                <h2>🤖 AI Conversation</h2>
+                <h2>
+                    🤖 AI Conversation
+                </h2>
 
                 <p>
                     Your recent study conversation.
                 </p>
 
             </div>
+
 
 
             <form
@@ -868,6 +1391,7 @@
         </div>
 
 
+
         <div class="conversation-container">
 
             {% for message in conversation %}
@@ -885,19 +1409,26 @@
 
                 <div class="message-header">
 
-                    {% if message.role == 'user' %}
+                    {% if message.role == "user" %}
+
                         👤 You
+
                     {% else %}
+
                         🤖 AI Assistant
+
                     {% endif %}
 
                 </div>
 
 
+
                 <div
                     class="message-content markdown-content"
                 >
+
                     {{ message.content }}
+
                 </div>
 
             </div>
@@ -911,7 +1442,11 @@
     {% endif %}
 
 
-    <!-- FOOTER -->
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
     <footer>
 
         <p>
@@ -924,46 +1459,62 @@
 
     </footer>
 
+
 </div>
 
 
-<!-- FLASHCARD DATA -->
+
+<!-- =========================================
+     FLASHCARD DATA
+========================================== -->
+
 {% if flashcards %}
 
-<script id="flashcards-data" type="application/json">
+<script
+    id="flashcards-data"
+    type="application/json"
+>
 {{ flashcards | tojson }}
 </script>
 
 {% endif %}
 
 
+
 <script>
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    /* ---------------------------------------
+
+    /* =========================================
        MODE SWITCHING
-    --------------------------------------- */
+    ========================================== */
 
     const modeInputs =
         document.querySelectorAll(
             'input[name="mode-select"]'
         );
 
+
     const normalSection =
         document.getElementById(
             "normal-question-section"
         );
+
 
     const quizGenerator =
         document.getElementById(
             "quiz-generator"
         );
 
+
     const flashcardGenerator =
         document.getElementById(
             "flashcard-generator"
         );
+
 
     const selectedMode =
         document.getElementById(
@@ -971,73 +1522,96 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-    modeInputs.forEach(function (input) {
 
-        input.addEventListener(
-            "change",
-            function () {
+    modeInputs.forEach(
+        function (input) {
 
-                const mode = this.value;
+            input.addEventListener(
+                "change",
+                function () {
 
-                selectedMode.value = mode;
-
-
-                /* Hide everything first */
-
-                if (normalSection) {
-                    normalSection.style.display =
-                        "none";
-                }
-
-                if (quizGenerator) {
-                    quizGenerator.style.display =
-                        "none";
-                }
-
-                if (flashcardGenerator) {
-                    flashcardGenerator.style.display =
-                        "none";
-                }
+                    const mode =
+                        this.value;
 
 
-                /* Show selected section */
+                    selectedMode.value =
+                        mode;
 
-                if (mode === "quiz") {
 
-                    if (quizGenerator) {
-                        quizGenerator.style.display =
-                            "block";
-                    }
-
-                }
-
-                else if (mode === "flashcards") {
-
-                    if (flashcardGenerator) {
-                        flashcardGenerator.style.display =
-                            "block";
-                    }
-
-                }
-
-                else {
 
                     if (normalSection) {
+
                         normalSection.style.display =
-                            "block";
+                            "none";
+
+                    }
+
+
+                    if (quizGenerator) {
+
+                        quizGenerator.style.display =
+                            "none";
+
+                    }
+
+
+                    if (flashcardGenerator) {
+
+                        flashcardGenerator.style.display =
+                            "none";
+
+                    }
+
+
+
+                    if (mode === "quiz") {
+
+                        if (quizGenerator) {
+
+                            quizGenerator.style.display =
+                                "block";
+
+                        }
+
+                    }
+
+
+                    else if (
+                        mode === "flashcards"
+                    ) {
+
+                        if (flashcardGenerator) {
+
+                            flashcardGenerator.style.display =
+                                "block";
+
+                        }
+
+                    }
+
+
+                    else {
+
+                        if (normalSection) {
+
+                            normalSection.style.display =
+                                "block";
+
+                        }
+
                     }
 
                 }
+            );
 
-            }
-        );
-
-    });
+        }
+    );
 
 
-    /* ---------------------------------------
-       MARKDOWN RENDERING
-    --------------------------------------- */
+
+    /* =========================================
+       MARKDOWN
+    ========================================== */
 
     const markdownElements =
         document.querySelectorAll(
@@ -1045,23 +1619,32 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-    markdownElements.forEach(function (element) {
+    markdownElements.forEach(
+        function (element) {
 
-        const markdown =
-            element.textContent;
-
-        const html =
-            marked.parse(markdown);
-
-        element.innerHTML =
-            DOMPurify.sanitize(html);
-
-    });
+            const markdown =
+                element.textContent;
 
 
-    /* ---------------------------------------
+            const html =
+                marked.parse(
+                    markdown
+                );
+
+
+            element.innerHTML =
+                DOMPurify.sanitize(
+                    html
+                );
+
+        }
+    );
+
+
+
+    /* =========================================
        INTERACTIVE FLASHCARDS
-    --------------------------------------- */
+    ========================================== */
 
     const flashcardDataElement =
         document.getElementById(
@@ -1070,6 +1653,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     if (flashcardDataElement) {
+
 
         const flashcardData =
             JSON.parse(
@@ -1082,6 +1666,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         let currentIndex = 0;
+
 
 
         const flashcard =
@@ -1132,10 +1717,14 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+
         function showCard() {
 
+
             if (!cards.length) {
+
                 return;
+
             }
 
 
@@ -1159,25 +1748,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 cards.length;
 
 
-            /* Reset to front */
+
             flashcard.classList.remove(
                 "flipped"
             );
 
 
-            /* Disable buttons at ends */
 
             if (currentIndex === 0) {
 
                 previousButton.disabled =
                     true;
 
-            } else {
+            }
+
+            else {
 
                 previousButton.disabled =
                     false;
 
             }
+
 
 
             if (
@@ -1188,7 +1779,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 nextButton.disabled =
                     true;
 
-            } else {
+            }
+
+            else {
 
                 nextButton.disabled =
                     false;
@@ -1198,6 +1791,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
+
         function flipCard() {
 
             flashcard.classList.toggle(
@@ -1205,6 +1799,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
         }
+
 
 
         previousButton.addEventListener(
@@ -1221,6 +1816,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             }
         );
+
 
 
         nextButton.addEventListener(
@@ -1242,6 +1838,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+
         flipButton.addEventListener(
             "click",
             function () {
@@ -1250,6 +1847,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             }
         );
+
 
 
         flashcard.addEventListener(
@@ -1262,13 +1860,15 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        /* Keyboard controls */
 
         document.addEventListener(
             "keydown",
             function (event) {
 
-                if (event.key === "ArrowLeft") {
+                if (
+                    event.key ===
+                    "ArrowLeft"
+                ) {
 
                     if (currentIndex > 0) {
 
@@ -1281,7 +1881,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                if (event.key === "ArrowRight") {
+
+                if (
+                    event.key ===
+                    "ArrowRight"
+                ) {
 
                     if (
                         currentIndex <
@@ -1297,7 +1901,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                if (event.key === " ") {
+
+                if (
+                    event.key === " "
+                ) {
 
                     event.preventDefault();
 
@@ -1317,5 +1924,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 
+
 </body>
+
 </html>
