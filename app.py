@@ -1,105 +1,41 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for
 from groq import Groq
 import os
 import uuid
 import PyPDF2
 from docx import Document
 
-
 app = Flask(__name__)
 
-
-# --------------------------------------------------
-# FLASK SECRET KEY
-# --------------------------------------------------
-
+# Secret key
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "change-this-secret-key"
 )
 
-
-# --------------------------------------------------
-# FILE UPLOAD SETTINGS
-# --------------------------------------------------
-
+# Maximum upload size = 10 MB
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
-
-# --------------------------------------------------
-# GROQ API
-# --------------------------------------------------
-
+# Groq API
 api_key = os.environ.get("GROQ_API_KEY")
-
 client = Groq(api_key=api_key)
 
-
-# --------------------------------------------------
-# SERVER STORAGE
-# --------------------------------------------------
-
+# Folder for temporary user data
 DATA_FOLDER = "user_data"
-
-os.makedirs(
-    DATA_FOLDER,
-    exist_ok=True
-)
+os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
-# --------------------------------------------------
-# MAIN AI INSTRUCTIONS
-# --------------------------------------------------
-
-system_instruction = """
-You are an AI Study Assistant for students.
-
-Your job is to help students learn from their study material
-and understand difficult subjects.
-
-LANGUAGE RULES:
-1. Understand questions written in any language.
-2. Reply in the same language as the student's question.
-3. If the student asks for another language, use that language.
-4. Do not unnecessarily translate the question.
-
-STUDY RULES:
-1. Explain concepts clearly and simply.
-2. Break difficult topics into smaller parts.
-3. Use headings and bullet points.
-4. Use examples when useful.
-5. Be educational and easy to understand.
-6. Remember previous messages in the conversation.
-
-NOTES RULE:
-If study material has been uploaded, use that material as
-the main source for questions about the uploaded material.
-
-Do not pretend information is present in the notes if it
-is not actually present.
-"""
-
-
-# --------------------------------------------------
-# SESSION ID
-# --------------------------------------------------
+# =========================================
+# SESSION / USER STORAGE
+# =========================================
 
 def get_session_id():
 
     if "session_id" not in session:
-
-        session["session_id"] = str(
-            uuid.uuid4()
-        )
-
-        session.modified = True
+        session["session_id"] = str(uuid.uuid4())
 
     return session["session_id"]
 
-
-# --------------------------------------------------
-# USER FOLDER
-# --------------------------------------------------
 
 def get_user_folder():
 
@@ -110,17 +46,10 @@ def get_user_folder():
         session_id
     )
 
-    os.makedirs(
-        folder,
-        exist_ok=True
-    )
+    os.makedirs(folder, exist_ok=True)
 
     return folder
 
-
-# --------------------------------------------------
-# FILE PATHS
-# --------------------------------------------------
 
 def get_conversation_file():
 
@@ -146,33 +75,14 @@ def get_filename_file():
     )
 
 
-# --------------------------------------------------
-# FILE NAME
-# --------------------------------------------------
-
-def get_uploaded_file_name():
-
-    path = get_filename_file()
-
-    if os.path.exists(path):
-
-        with open(
-            path,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            return file.read()
-
-    return None
-
+# =========================================
+# FILE NAME STORAGE
+# =========================================
 
 def save_uploaded_file_name(filename):
 
-    path = get_filename_file()
-
     with open(
-        path,
+        get_filename_file(),
         "w",
         encoding="utf-8"
     ) as file:
@@ -180,16 +90,31 @@ def save_uploaded_file_name(filename):
         file.write(filename)
 
 
-# --------------------------------------------------
-# CONVERSATION
-# --------------------------------------------------
+def get_uploaded_file_name():
+
+    filename_file = get_filename_file()
+
+    if os.path.exists(filename_file):
+
+        with open(
+            filename_file,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            return file.read()
+
+    return ""
+
+
+# =========================================
+# CONVERSATION STORAGE
+# =========================================
 
 def save_conversation(conversation):
 
-    path = get_conversation_file()
-
     with open(
-        path,
+        get_conversation_file(),
         "w",
         encoding="utf-8"
     ) as file:
@@ -197,11 +122,13 @@ def save_conversation(conversation):
         for message in conversation:
 
             file.write(
-                message["role"] + "\n"
+                message["role"]
+                + "\n"
             )
 
             file.write(
-                message["content"] + "\n"
+                message["content"]
+                + "\n"
             )
 
             file.write(
@@ -211,34 +138,29 @@ def save_conversation(conversation):
 
 def load_conversation():
 
-    path = get_conversation_file()
+    filename = get_conversation_file()
 
-    if not os.path.exists(path):
+    if not os.path.exists(filename):
 
-        return [
-            {
-                "role": "system",
-                "content": system_instruction
-            }
-        ]
-
-
-    conversation = []
-
+        return []
 
     with open(
-        path,
+        filename,
         "r",
         encoding="utf-8"
     ) as file:
 
-        data = file.read()
+        text = file.read()
 
+    if not text.strip():
 
-    blocks = data.split(
+        return []
+
+    blocks = text.split(
         "-----MESSAGE-END-----"
     )
 
+    conversation = []
 
     for block in blocks:
 
@@ -247,59 +169,30 @@ def load_conversation():
         if not block:
             continue
 
-
-        lines = block.split(
-            "\n",
-            1
-        )
-
+        lines = block.split("\n", 1)
 
         if len(lines) != 2:
             continue
 
-
         role = lines[0].strip()
-
         content = lines[1].strip()
 
-
-        if role in [
-            "system",
-            "user",
-            "assistant"
-        ]:
-
-            conversation.append(
-                {
-                    "role": role,
-                    "content": content
-                }
-            )
-
-
-    if not conversation:
-
-        conversation = [
-            {
-                "role": "system",
-                "content": system_instruction
-            }
-        ]
-
+        conversation.append({
+            "role": role,
+            "content": content
+        })
 
     return conversation
 
 
-# --------------------------------------------------
-# NOTES
-# --------------------------------------------------
+# =========================================
+# NOTES STORAGE
+# =========================================
 
 def save_notes(text):
 
-    path = get_notes_file()
-
     with open(
-        path,
+        get_notes_file(),
         "w",
         encoding="utf-8"
     ) as file:
@@ -309,14 +202,14 @@ def save_notes(text):
 
 def load_notes():
 
-    path = get_notes_file()
+    filename = get_notes_file()
 
-    if not os.path.exists(path):
+    if not os.path.exists(filename):
+
         return ""
 
-
     with open(
-        path,
+        filename,
         "r",
         encoding="utf-8"
     ) as file:
@@ -324,269 +217,180 @@ def load_notes():
         return file.read()
 
 
-# --------------------------------------------------
-# PDF EXTRACTION
-# --------------------------------------------------
+# =========================================
+# PDF TEXT EXTRACTION
+# =========================================
 
-def extract_pdf_text(file_path):
+def extract_pdf_text(file):
 
     text = ""
 
+    reader = PyPDF2.PdfReader(file)
 
-    with open(
-        file_path,
-        "rb"
-    ) as file:
+    for page in reader.pages:
 
-        reader = PyPDF2.PdfReader(
-            file
-        )
+        page_text = page.extract_text()
 
+        if page_text:
 
-        for page in reader.pages:
-
-            page_text = page.extract_text()
-
-
-            if page_text:
-
-                text += (
-                    page_text
-                    + "\n"
-                )
-
+            text += page_text
+            text += "\n"
 
     return text
 
 
-# --------------------------------------------------
-# DOCX EXTRACTION
-# --------------------------------------------------
+# =========================================
+# DOCX TEXT EXTRACTION
+# =========================================
 
-def extract_docx_text(file_path):
+def extract_docx_text(file):
 
-    document = Document(
-        file_path
-    )
+    document = Document(file)
 
     text = ""
-
 
     for paragraph in document.paragraphs:
 
         if paragraph.text.strip():
 
-            text += (
-                paragraph.text
-                + "\n"
-            )
-
+            text += paragraph.text
+            text += "\n"
 
     return text
 
 
-# --------------------------------------------------
-# TEXT EXTRACTION
-# --------------------------------------------------
+# =========================================
+# GENERAL TEXT EXTRACTION
+# =========================================
 
-def extract_text(
-    file_path,
-    extension
-):
+def extract_text(file, filename):
 
-    if extension == ".pdf":
+    extension = filename.lower().split(".")[-1]
 
-        return extract_pdf_text(
-            file_path
-        )
+    if extension == "pdf":
 
+        return extract_pdf_text(file)
 
-    elif extension == ".docx":
+    elif extension == "docx":
 
-        return extract_docx_text(
-            file_path
-        )
-
+        return extract_docx_text(file)
 
     return ""
 
 
-# --------------------------------------------------
-# HOME
-# --------------------------------------------------
+# =========================================
+# HOME PAGE
+# =========================================
 
 @app.route("/")
 def home():
 
+    conversation = load_conversation()
+
+    notes = load_notes()
+
+    filename = get_uploaded_file_name()
+
     return render_template(
         "index.html",
-        answer=None,
-        uploaded_file=get_uploaded_file_name()
+        conversation=conversation,
+        notes=notes,
+        filename=filename
     )
 
 
-# --------------------------------------------------
-# UPLOAD
-# --------------------------------------------------
+# =========================================
+# UPLOAD STUDY MATERIAL
+# =========================================
 
-@app.route(
-    "/upload",
-    methods=["POST"]
-)
+@app.route("/upload", methods=["POST"])
 def upload():
 
-    file = request.files.get(
-        "study_file"
+    uploaded_file = request.files.get(
+        "file"
     )
 
+    if not uploaded_file:
 
-    if not file or file.filename == "":
-
-        return render_template(
-            "index.html",
-            answer="Please select a PDF or DOCX file.",
-            uploaded_file=get_uploaded_file_name()
+        return redirect(
+            url_for("home")
         )
 
+    filename = uploaded_file.filename
 
-    filename = file.filename.lower()
+    if not filename:
 
-
-    if filename.endswith(".pdf"):
-
-        extension = ".pdf"
-
-    elif filename.endswith(".docx"):
-
-        extension = ".docx"
-
-    else:
-
-        return render_template(
-            "index.html",
-            answer="Only PDF and DOCX files are supported.",
-            uploaded_file=get_uploaded_file_name()
+        return redirect(
+            url_for("home")
         )
 
+    extension = filename.lower().split(".")[-1]
 
-    unique_name = (
-        str(uuid.uuid4())
-        + extension
-    )
+    if extension not in ["pdf", "docx"]:
 
-
-    file_path = os.path.join(
-        get_user_folder(),
-        unique_name
-    )
-
+        return redirect(
+            url_for("home")
+        )
 
     try:
 
-        file.save(
+        # Extract text
+        text = extract_text(
+            uploaded_file,
+            filename
+        )
+
+        if not text.strip():
+
+            return redirect(
+                url_for("home")
+            )
+
+        # Save notes
+        save_notes(text)
+
+        # Save original file
+        safe_filename = os.path.basename(
+            filename
+        )
+
+        file_path = os.path.join(
+            get_user_folder(),
+            safe_filename
+        )
+
+        uploaded_file.seek(0)
+
+        uploaded_file.save(
             file_path
         )
 
-
-        extracted_text = extract_text(
-            file_path,
-            extension
-        )
-
-
-        if not extracted_text.strip():
-
-            os.remove(
-                file_path
-            )
-
-
-            return render_template(
-                "index.html",
-                answer=(
-                    "I could not extract readable text from this file. "
-                    "Please try a text-based PDF or DOCX file."
-                ),
-                uploaded_file=None
-            )
-
-
-        save_notes(
-            extracted_text
-        )
-
-
+        # Save filename
         save_uploaded_file_name(
-            file.filename
+            safe_filename
+        )
+
+        # Start fresh conversation
+        save_conversation([])
+
+        return redirect(
+            url_for("home")
+        )
+
+    except Exception as e:
+
+        print("Upload error:", e)
+
+        return redirect(
+            url_for("home")
         )
 
 
-        conversation = [
-            {
-                "role": "system",
-                "content": system_instruction
-            }
-        ]
-
-
-        save_conversation(
-            conversation
-        )
-
-
-        return render_template(
-
-            "index.html",
-
-            answer=(
-                "Your study material was uploaded successfully. "
-                "You can now study with AI."
-            ),
-
-            uploaded_file=file.filename
-
-        )
-
-
-    except Exception as error:
-
-        print(
-            "File Error:",
-            error
-        )
-
-
-        if os.path.exists(
-            file_path
-        ):
-
-            os.remove(
-                file_path
-            )
-
-
-        return render_template(
-
-            "index.html",
-
-            answer=(
-                "There was a problem processing the file. "
-                "Please try another file."
-            ),
-
-            uploaded_file=None
-
-        )
-
-
-# --------------------------------------------------
+# =========================================
 # ASK AI
-# --------------------------------------------------
+# =========================================
 
-@app.route(
-    "/ask",
-    methods=["POST"]
-)
+@app.route("/ask", methods=["POST"])
 def ask():
 
     user_question = request.form.get(
@@ -594,193 +398,244 @@ def ask():
         ""
     ).strip()
 
-
     study_mode = request.form.get(
         "mode",
         "explain"
     )
 
-
-    uploaded_file = get_uploaded_file_name()
-
-
     if not user_question:
 
-        return render_template(
-
-            "index.html",
-
-            answer="Please enter a question or topic.",
-
-            question="",
-
-            selected_mode=study_mode,
-
-            uploaded_file=uploaded_file
-
+        return redirect(
+            url_for("home")
         )
 
+    notes = load_notes()
 
-    # --------------------------------------------------
-    # EXPLAIN
-    # --------------------------------------------------
+    conversation = load_conversation()
+
+
+    # =====================================
+    # MAIN AI INSTRUCTION
+    # =====================================
+
+    base_instruction = """
+You are an AI Study Assistant.
+
+Your job is to help students understand
+academic subjects clearly.
+
+Understand questions written in any language.
+
+Reply in the same language as the student's
+question by default.
+
+If the student explicitly asks for another
+language, reply in that language.
+
+Support languages such as:
+
+English
+Telugu
+Hindi
+Tamil
+Kannada
+Malayalam
+Bengali
+Marathi
+Gujarati
+Punjabi
+Urdu
+
+and other languages.
+
+Keep technical terms accurate.
+
+Use simple, student-friendly explanations.
+
+Use headings, bullet points, numbered lists,
+tables, formulas, and examples when useful.
+
+Do not unnecessarily make answers complicated.
+"""
+
+
+    # =====================================
+    # EXPLAIN MODE
+    # =====================================
 
     if study_mode == "explain":
 
         instruction = """
 Explain the topic clearly for a student.
 
-Reply in the same language as the student's question.
+Start with a simple definition.
 
-Use:
-- Simple language
-- Clear headings
-- Bullet points
-- Examples when useful
+Then explain the concept step by step.
 
-If study material is uploaded,
-use it as the main source.
+Give a simple example when useful.
+
+End with important points to remember.
+
+Make the explanation easy to understand
+for exam preparation.
 """
 
 
-    # --------------------------------------------------
-    # SUMMARIZE
-    # --------------------------------------------------
+    # =====================================
+    # SUMMARIZE MODE
+    # =====================================
 
     elif study_mode == "summarize":
 
         instruction = """
-Summarize the uploaded study material or given topic.
+Summarize the topic clearly.
 
-Reply in the same language as the student's question.
+Include only the important information.
 
-Include:
-- Important concepts
-- Important definitions
+Use:
+
 - Key points
-- Important examples
+- Important definitions
+- Important formulas if applicable
+- Important examples if applicable
+- Exam points
 
-Use headings and bullet points.
-
-Keep the summary easy to revise.
+Keep the summary concise and useful
+for revision.
 """
 
 
-    # --------------------------------------------------
-    # QUIZ
-    # --------------------------------------------------
+    # =====================================
+    # QUIZ MODE
+    # =====================================
 
     elif study_mode == "quiz":
 
         instruction = """
-Create a quiz about the given topic.
+Create a short quiz for the student.
 
-Reply in the same language as the student's question.
+Ask around 5 questions.
 
-Create:
-- 5 multiple-choice questions
-- 5 short-answer questions
+Mix different types such as:
 
-Provide an answer key separately.
+- Multiple choice
+- Short answer
+- Concept questions
 
-If study material is uploaded,
-create the questions mainly from that material.
+Do not immediately reveal the answers.
+
+After the student answers,
+check the answers and explain mistakes.
 """
 
 
-    # --------------------------------------------------
-    # DOUBT
-    # --------------------------------------------------
+    # =====================================
+    # DOUBT MODE
+    # =====================================
 
     elif study_mode == "doubt":
 
         instruction = """
-Answer the student's doubt clearly.
+The student has a doubt.
 
-Reply in the same language as the student's question.
+Understand exactly what the student
+is confused about.
 
 Explain the concept step by step.
 
-Use a simple example when useful.
+If necessary, give a simple example.
 
-If study material is uploaded,
-use it as the main source.
+Correct misunderstandings politely.
+
+Keep the explanation student-friendly.
 """
 
 
-    # --------------------------------------------------
-    # NOTES
-    # --------------------------------------------------
+    # =====================================
+    # ASK FROM NOTES MODE
+    # =====================================
 
     elif study_mode == "notes":
 
         instruction = """
-The student wants to study from their uploaded notes.
+Use the uploaded study material as the
+main source for your answer.
 
-Reply in the same language as the student's question.
+Do not invent information that is not
+supported by the uploaded notes.
 
-Use the uploaded study material as the MAIN SOURCE.
+Generate important exam questions from
+the uploaded study material.
 
-For exam questions, organize them into:
+Organize the questions into:
 
 1. Very Short Answer Questions
 2. Short Answer Questions
 3. Long Answer Questions
 
-Do not invent topics that are not present
-in the uploaded study material.
+Focus on important definitions,
+concepts, differences, explanations,
+examples, formulas, and other points
+that are actually present in the notes.
+
+Reply in the same language as the
+student's question.
 """
 
 
-    # --------------------------------------------------
-    # FLASHCARDS
-    # --------------------------------------------------
+    # =====================================
+    # FLASHCARDS MODE
+    # =====================================
 
     elif study_mode == "flashcards":
 
         instruction = """
-Create study flashcards from the uploaded notes.
+Create around 10 useful study flashcards.
 
-Reply in the same language as the student's question.
-
-Create around 10 flashcards.
-
-Each flashcard should contain:
-
-FLASHCARD 1
+Each flashcard must contain:
 
 Question:
-A clear question about an important concept.
-
 Answer:
-A short and accurate answer.
 
 Focus on:
+
 - Definitions
 - Important concepts
-- Key facts
-- Formulas when present
+- Facts
+- Formulas
 - Differences
 - Important revision points
 
-Use the uploaded notes as the main source.
+If study notes are uploaded,
+create the flashcards mainly from
+those notes.
 
-Do not invent information that is not in the notes.
+Do not invent information that is not
+supported by the notes.
+
+Make the flashcards short and useful
+for quick revision.
+
+Reply in the same language as the
+student's question.
 """
 
 
-    # --------------------------------------------------
-    # STUDY PLAN
-    # --------------------------------------------------
+    # =====================================
+    # STUDY PLAN MODE
+    # =====================================
 
     elif study_mode == "studyplan":
 
         instruction = """
-Create a practical and realistic study plan for the student.
+Create a practical and realistic study plan
+for the student.
 
-Reply in the same language as the student's question.
+Reply in the same language as the student's
+question.
 
 Understand the student's:
+
 - Subject or subjects
 - Number of days
 - Available study time
@@ -788,7 +643,8 @@ Understand the student's:
 - Uploaded study material if available
 
 If the student has uploaded notes,
-build the plan mainly around the topics in those notes.
+build the plan mainly around the topics
+in those notes.
 
 Organize the plan clearly.
 
@@ -802,6 +658,7 @@ Use:
 6. Final Review
 
 For each day, mention:
+
 - What to study
 - Approximate time
 - What to practice
@@ -809,114 +666,96 @@ For each day, mention:
 
 Keep the plan realistic.
 
-Do not suggest studying continuously without breaks.
+Do not suggest studying continuously
+without breaks.
 
 Include reasonable short breaks.
 
-If the student has not provided enough information,
-make a sensible general study plan and clearly state
-the assumptions you made.
+If the student has not provided enough
+information, make a sensible general
+study plan and clearly state the
+assumptions you made.
 """
 
 
     else:
 
         instruction = """
-Help the student understand the topic clearly.
-
-Reply in the same language as the student's question.
+Answer the student's question clearly
+and helpfully.
 """
 
 
-    # --------------------------------------------------
-    # LOAD CONVERSATION
-    # --------------------------------------------------
+    # =====================================
+    # NOTES CONTEXT
+    # =====================================
 
-    conversation = load_conversation()
+    notes_context = ""
 
+    if notes.strip():
 
-    # --------------------------------------------------
-    # LOAD NOTES
-    # --------------------------------------------------
+        # Limit notes sent to AI
+        limited_notes = notes[:50000]
 
-    document_text = load_notes()
+        notes_context = f"""
 
-
-    maximum_document_chars = 50000
-
-
-    if document_text:
-
-        document_for_ai = document_text[
-            :maximum_document_chars
-        ]
-
-
-        notes_instruction = f"""
 The student has uploaded study material.
 
-Use this material as the main source when relevant.
+Use it when it is relevant.
 
-Do not claim information is in the material
-if it is not actually present.
+Uploaded study material:
 
------ BEGIN STUDY MATERIAL -----
+-------------------------
+{limited_notes}
+-------------------------
 
-{document_for_ai}
-
------ END STUDY MATERIAL -----
 """
 
 
-    else:
+    # =====================================
+    # FINAL SYSTEM PROMPT
+    # =====================================
 
-        notes_instruction = """
-No study material has been uploaded.
-
-Answer the student's question normally.
-
-If the student asks for a plan based on their notes,
-tell them that they need to upload their notes first.
-"""
+    system_prompt = (
+        base_instruction
+        + "\n"
+        + instruction
+        + notes_context
+    )
 
 
-    # --------------------------------------------------
-    # ADD INSTRUCTIONS
-    # --------------------------------------------------
+    # =====================================
+    # CONVERSATION HISTORY
+    # =====================================
 
-    conversation.append(
-
+    messages = [
         {
             "role": "system",
-            "content": instruction
+            "content": system_prompt
         }
+    ]
 
-    )
+    # Keep recent conversation
+    recent_conversation = conversation[-10:]
 
+    for message in recent_conversation:
 
-    conversation.append(
-
-        {
-            "role": "system",
-            "content": notes_instruction
-        }
-
-    )
-
-
-    conversation.append(
-
-        {
-            "role": "user",
-            "content": user_question
-        }
-
-    )
+        messages.append({
+            "role": message["role"],
+            "content": message["content"]
+        })
 
 
-    # --------------------------------------------------
-    # GROQ REQUEST
-    # --------------------------------------------------
+    # Add current question
+    messages.append({
+        "role": "user",
+        "content": user_question
+    })
+
+
+    # =====================================
+    # CALL GROQ
+    # =====================================
 
     try:
 
@@ -924,12 +763,11 @@ tell them that they need to upload their notes first.
 
             model="openai/gpt-oss-20b",
 
-            messages=conversation
+            messages=messages
 
         )
 
-
-        answer = (
+        ai_response = (
             response
             .choices[0]
             .message
@@ -937,32 +775,37 @@ tell them that they need to upload their notes first.
         )
 
 
-    except Exception as error:
+    except Exception as e:
 
-        print(
-            "Groq Error:",
-            error
-        )
+        print("Groq error:", e)
 
+        ai_response = """
+Sorry, I could not process your request
+right now.
 
-        answer = (
-            "Sorry, I could not generate a response right now. "
-            "Please try again."
-        )
+Please try again in a moment.
+"""
 
 
-    # --------------------------------------------------
+    # =====================================
     # SAVE CONVERSATION
-    # --------------------------------------------------
+    # =====================================
 
-    conversation.append(
+    conversation.append({
 
-        {
-            "role": "assistant",
-            "content": answer
-        }
+        "role": "user",
 
-    )
+        "content": user_question
+
+    })
+
+    conversation.append({
+
+        "role": "assistant",
+
+        "content": ai_response
+
+    })
 
 
     save_conversation(
@@ -970,114 +813,88 @@ tell them that they need to upload their notes first.
     )
 
 
-    # --------------------------------------------------
-    # DISPLAY
-    # --------------------------------------------------
-
-    return render_template(
-
-        "index.html",
-
-        question=user_question,
-
-        answer=answer,
-
-        selected_mode=study_mode,
-
-        uploaded_file=uploaded_file
-
+    return redirect(
+        url_for("home")
     )
 
 
-# --------------------------------------------------
-# CLEAR
-# --------------------------------------------------
+# =========================================
+# CLEAR CONVERSATION
+# =========================================
 
 @app.route("/clear")
 def clear():
 
     user_folder = get_user_folder()
 
+    # Delete conversation
+    conversation_file = get_conversation_file()
 
-    try:
+    if os.path.exists(conversation_file):
 
-        for filename in os.listdir(
-            user_folder
-        ):
+        os.remove(conversation_file)
+
+
+    # Delete notes
+    notes_file = get_notes_file()
+
+    if os.path.exists(notes_file):
+
+        os.remove(notes_file)
+
+
+    # Delete filename
+    filename_file = get_filename_file()
+
+    if os.path.exists(filename_file):
+
+        os.remove(filename_file)
+
+
+    # Delete uploaded files
+    if os.path.exists(user_folder):
+
+        for filename in os.listdir(user_folder):
 
             file_path = os.path.join(
                 user_folder,
                 filename
             )
 
+            if os.path.isfile(file_path):
 
-            if os.path.isfile(
-                file_path
-            ):
+                try:
 
-                os.remove(
-                    file_path
-                )
+                    os.remove(file_path)
 
+                except Exception:
 
-    except Exception as error:
-
-        print(
-            "Clear Error:",
-            error
-        )
+                    pass
 
 
-    conversation = [
-
-        {
-            "role": "system",
-            "content": system_instruction
-        }
-
-    ]
-
-
-    save_conversation(
-        conversation
+    return redirect(
+        url_for("home")
     )
 
 
-    return render_template(
-
-        "index.html",
-
-        answer=None,
-
-        uploaded_file=None
-
-    )
-
-
-# --------------------------------------------------
+# =========================================
 # FILE TOO LARGE
-# --------------------------------------------------
+# =========================================
 
 @app.errorhandler(413)
-def file_too_large(error):
+def too_large(error):
 
-    return render_template(
-
-        "index.html",
-
-        answer=(
-            "File is too large. "
-            "Maximum allowed size is 10 MB."
-        ),
-
-        uploaded_file=get_uploaded_file_name()
-
-    ), 413
+    return """
+    <h2>File is too large.</h2>
+    <p>Please upload a PDF or DOCX file
+    smaller than 10 MB.</p>
+    <a href="/">Go Back</a>
+    """, 413
 
 
-# --------------------------------------------------
-# RUN
-# --------------------------------------------------
+# =========================================
+# RUN APPLICATION
+# =========================================
 
 if __name__ == "__main__":
 
