@@ -8,22 +8,27 @@ from docx import Document
 
 app = Flask(__name__)
 
+
+# Flask secret key
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "change-this-secret-key"
 )
 
-# Maximum uploaded file size = 10 MB
+
+# Maximum upload size: 10 MB
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 
 # Groq API
 api_key = os.environ.get("GROQ_API_KEY")
+
 client = Groq(api_key=api_key)
 
 
 # Upload folder
 UPLOAD_FOLDER = "uploads"
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -51,10 +56,15 @@ STUDY RULES:
 NOTES RULE:
 If study material has been uploaded, use that material as
 the main source for questions about the uploaded material.
-Do not pretend that information is present in the notes if it
+
+Do not pretend information is present in the notes if it
 is not actually present.
 """
 
+
+# --------------------------------------------------
+# PDF TEXT EXTRACTION
+# --------------------------------------------------
 
 def extract_pdf_text(file_path):
 
@@ -69,10 +79,15 @@ def extract_pdf_text(file_path):
             page_text = page.extract_text()
 
             if page_text:
+
                 text += page_text + "\n"
 
     return text
 
+
+# --------------------------------------------------
+# DOCX TEXT EXTRACTION
+# --------------------------------------------------
 
 def extract_docx_text(file_path):
 
@@ -83,21 +98,32 @@ def extract_docx_text(file_path):
     for paragraph in document.paragraphs:
 
         if paragraph.text.strip():
+
             text += paragraph.text + "\n"
 
     return text
 
 
+# --------------------------------------------------
+# SELECT EXTRACTION METHOD
+# --------------------------------------------------
+
 def extract_text(file_path, extension):
 
     if extension == ".pdf":
+
         return extract_pdf_text(file_path)
 
-    if extension == ".docx":
+    elif extension == ".docx":
+
         return extract_docx_text(file_path)
 
     return ""
 
+
+# --------------------------------------------------
+# HOME PAGE
+# --------------------------------------------------
 
 @app.route("/")
 def home():
@@ -118,32 +144,47 @@ def home():
     )
 
 
+# --------------------------------------------------
+# UPLOAD STUDY MATERIAL
+# --------------------------------------------------
+
 @app.route("/upload", methods=["POST"])
 def upload():
 
     file = request.files.get("study_file")
 
     if not file or file.filename == "":
+
         return render_template(
             "index.html",
             answer="Please select a PDF or DOCX file.",
             uploaded_file=None
         )
 
+
     filename = file.filename.lower()
 
+
+    # Check file type
+
     if filename.endswith(".pdf"):
+
         extension = ".pdf"
 
     elif filename.endswith(".docx"):
+
         extension = ".docx"
 
     else:
+
         return render_template(
             "index.html",
             answer="Only PDF and DOCX files are supported.",
             uploaded_file=None
         )
+
+
+    # Unique file name
 
     unique_name = str(uuid.uuid4()) + extension
 
@@ -152,65 +193,94 @@ def upload():
         unique_name
     )
 
+
     try:
 
+        # Save file
+
         file.save(file_path)
+
+
+        # Extract text
 
         extracted_text = extract_text(
             file_path,
             extension
         )
 
+
+        # Check text
+
         if not extracted_text.strip():
 
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            os.remove(file_path)
 
             return render_template(
                 "index.html",
                 answer=(
-                    "I could not extract readable text from this file."
+                    "I could not extract readable text from this file. "
+                    "Please try a text-based PDF or DOCX file."
                 ),
                 uploaded_file=None
             )
 
-        # Save document information
+
+        # Save information
+
         session["uploaded_file"] = file.filename
+
         session["uploaded_path"] = file_path
+
         session["document_text"] = extracted_text
 
+
         # Start fresh conversation
+
         session["conversation"] = [
+
             {
                 "role": "system",
                 "content": system_instruction
             }
+
         ]
 
         session.modified = True
 
+
         return render_template(
             "index.html",
             answer=(
-                "Study material uploaded successfully. "
-                "You can now ask questions about your notes."
+                "Your study material was uploaded successfully. "
+                "You can now ask questions about it."
             ),
             uploaded_file=file.filename
         )
 
+
     except Exception as error:
 
-        print("Upload Error:", error)
+        print("File Error:", error)
+
 
         if os.path.exists(file_path):
+
             os.remove(file_path)
+
 
         return render_template(
             "index.html",
-            answer="There was a problem processing your file.",
+            answer=(
+                "There was a problem processing the file. "
+                "Please try another file."
+            ),
             uploaded_file=None
         )
 
+
+# --------------------------------------------------
+# ASK AI
+# --------------------------------------------------
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -220,101 +290,144 @@ def ask():
         ""
     ).strip()
 
+
     study_mode = request.form.get(
         "mode",
         "explain"
     )
 
+
     if not user_question:
 
         return render_template(
             "index.html",
-            answer="Please enter a question.",
+            answer="Please enter a question or topic.",
             question="",
             selected_mode=study_mode,
             uploaded_file=session.get("uploaded_file")
         )
 
 
-    # Mode-specific instructions
+    # --------------------------------------------------
+    # STUDY MODE INSTRUCTIONS
+    # --------------------------------------------------
 
     if study_mode == "explain":
 
         instruction = """
-EXPLAIN MODE
+Explain the topic clearly for a student.
 
-Explain the requested topic clearly.
+Reply in the same language as the student's question.
 
 Use:
 - Simple language
-- Headings
+- Clear headings
 - Bullet points
 - Examples when useful
 
-If study material is uploaded, explain the topic mainly
-using the uploaded material.
+If study material is uploaded, use it as the main source.
 """
 
 
     elif study_mode == "summarize":
 
         instruction = """
-SUMMARIZE MODE
+Summarize the uploaded study material or given topic.
 
-Summarize the uploaded study material or requested topic.
+Reply in the same language as the student's question.
 
-Focus on:
+Include:
 - Important concepts
-- Definitions
+- Important definitions
 - Key points
 - Important examples
 
 Use headings and bullet points.
 
-Keep the summary easy for a student to revise.
+Keep the summary easy to revise.
 """
 
 
     elif study_mode == "quiz":
 
         instruction = """
-QUIZ MODE
+Create a quiz about the given topic.
 
-Create a quiz based mainly on the uploaded study material.
+Reply in the same language as the student's question.
 
 Create:
 - 5 multiple-choice questions
 - 5 short-answer questions
 
-Then provide an answer key.
+Provide an answer key separately.
 
-Do not add unrelated topics that are not present
-in the uploaded material.
+If study material is uploaded,
+create the questions mainly from that material.
 """
 
 
     elif study_mode == "doubt":
 
         instruction = """
-DOUBT MODE
+Answer the student's doubt clearly.
 
-Answer the student's doubt step by step.
+Reply in the same language as the student's question.
 
-Use the uploaded study material as the main source
-when the question relates to it.
+Explain the concept step by step.
 
-Explain difficult parts in simple language.
+Use a simple example when useful.
+
+If study material is uploaded,
+use it as the main source.
+"""
+
+
+    elif study_mode == "notes":
+
+        instruction = """
+The student wants to study from their uploaded notes.
+
+Reply in the same language as the student's question.
+
+Use the uploaded study material as the MAIN SOURCE.
+
+If the student asks:
+
+"Generate important exam questions"
+
+or similar, create useful exam-oriented questions
+based ONLY on the uploaded study material.
+
+Organize them clearly into:
+
+1. Very Short Answer Questions
+2. Short Answer Questions
+3. Long Answer Questions
+
+If suitable, also include important definitions,
+concepts and topics that students should revise.
+
+Do not invent topics that are not present in the
+uploaded study material.
+
+If something is not available in the notes,
+clearly say that it is not found in the uploaded material.
 """
 
 
     else:
 
         instruction = """
-Answer the student's question clearly and educationally.
+Help the student understand the topic clearly.
+
+Reply in the same language as the student's question.
 """
 
 
-    # Get conversation
+    # --------------------------------------------------
+    # GET CONVERSATION
+    # --------------------------------------------------
+
     conversation = session.get(
         "conversation",
         [
@@ -326,47 +439,60 @@ Answer the student's question clearly and educationally.
     )
 
 
-    # Get notes
+    # --------------------------------------------------
+    # GET UPLOADED NOTES
+    # --------------------------------------------------
+
     document_text = session.get(
         "document_text",
         ""
     )
 
 
-    # Limit notes sent to AI
-    maximum_chars = 50000
+    # Maximum notes sent to AI
+
+    maximum_document_chars = 50000
+
 
     if document_text:
 
-        notes = document_text[:maximum_chars]
+        document_for_ai = document_text[
+            :maximum_document_chars
+        ]
 
-        notes_context = f"""
-UPLOADED STUDY MATERIAL
 
-Use the following material as the primary source.
+        notes_instruction = f"""
+The student has uploaded study material.
 
------ START NOTES -----
+Use this material as the main source.
 
-{notes}
+Do not claim that information is in the material
+if it is not actually present.
 
------ END NOTES -----
+----- BEGIN STUDY MATERIAL -----
 
-IMPORTANT:
-If the student's question cannot be answered from these notes,
-say that the information is not available in the uploaded material.
+{document_for_ai}
+
+----- END STUDY MATERIAL -----
 """
 
 
     else:
 
-        notes_context = """
+        notes_instruction = """
 No study material has been uploaded.
 
-Answer the student's question normally.
+Answer normally.
+
+If the student selected "Ask from My Notes",
+tell them that they need to upload study material first.
 """
 
 
-    # Add instructions
+    # --------------------------------------------------
+    # ADD INSTRUCTIONS
+    # --------------------------------------------------
+
     conversation.append(
         {
             "role": "system",
@@ -374,15 +500,17 @@ Answer the student's question normally.
         }
     )
 
+
     conversation.append(
         {
             "role": "system",
-            "content": notes_context
+            "content": notes_instruction
         }
     )
 
 
     # Add question
+
     conversation.append(
         {
             "role": "user",
@@ -391,18 +519,28 @@ Answer the student's question normally.
     )
 
 
+    # --------------------------------------------------
+    # SEND TO GROQ
+    # --------------------------------------------------
+
     try:
 
         response = client.chat.completions.create(
+
             model="openai/gpt-oss-20b",
+
             messages=conversation
+
         )
 
+
         answer = response.choices[0].message.content
+
 
     except Exception as error:
 
         print("Groq Error:", error)
+
 
         answer = (
             "Sorry, I could not generate a response right now. "
@@ -410,7 +548,10 @@ Answer the student's question normally.
         )
 
 
-    # Save conversation
+    # --------------------------------------------------
+    # SAVE CONVERSATION
+    # --------------------------------------------------
+
     conversation.append(
         {
             "role": "assistant",
@@ -418,18 +559,34 @@ Answer the student's question normally.
         }
     )
 
+
     session["conversation"] = conversation
+
     session.modified = True
 
 
+    # --------------------------------------------------
+    # DISPLAY ANSWER
+    # --------------------------------------------------
+
     return render_template(
+
         "index.html",
+
         question=user_question,
+
         answer=answer,
+
         selected_mode=study_mode,
+
         uploaded_file=session.get("uploaded_file")
+
     )
 
+
+# --------------------------------------------------
+# CLEAR CONVERSATION
+# --------------------------------------------------
 
 @app.route("/clear")
 def clear():
@@ -438,28 +595,34 @@ def clear():
         "uploaded_path"
     )
 
+
     if uploaded_path:
 
         try:
 
             if os.path.exists(uploaded_path):
+
                 os.remove(uploaded_path)
 
         except Exception as error:
 
-            print("Delete Error:", error)
+            print("File Delete Error:", error)
 
 
     session.clear()
 
+
     session["conversation"] = [
+
         {
             "role": "system",
             "content": system_instruction
         }
+
     ]
 
     session.modified = True
+
 
     return render_template(
         "index.html",
@@ -468,16 +631,35 @@ def clear():
     )
 
 
+# --------------------------------------------------
+# FILE TOO LARGE
+# --------------------------------------------------
+
 @app.errorhandler(413)
 def file_too_large(error):
 
     return render_template(
+
         "index.html",
-        answer="File is too large. Maximum allowed size is 10 MB.",
-        uploaded_file=session.get("uploaded_file")
+
+        answer=(
+            "File is too large. "
+            "Maximum allowed size is 10 MB."
+        ),
+
+        uploaded_file=session.get(
+            "uploaded_file"
+        )
+
     ), 413
 
 
+# --------------------------------------------------
+# RUN APP
+# --------------------------------------------------
+
 if __name__ == "__main__":
 
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )
