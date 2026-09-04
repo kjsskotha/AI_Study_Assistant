@@ -2,9 +2,7 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>AI Study Assistant</title>
@@ -12,450 +10,577 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
-    <!-- Markdown formatting -->
+    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- Security for generated HTML -->
+    <!-- Security -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
-
 </head>
 
 
 <body>
 
-    <!-- Background decorations -->
-
-    <div class="background-shape shape-one"></div>
-    <div class="background-shape shape-two"></div>
+<div class="background-shape shape-one"></div>
+<div class="background-shape shape-two"></div>
 
 
-    <!-- Main Application -->
-
-    <div class="app-container">
+<div class="app-container">
 
 
-        <!-- Header -->
+    <!-- HEADER -->
 
-        <header class="header">
+    <header class="header">
 
-            <div class="logo-area">
+        <div class="logo-area">
 
-                <div class="logo">
-                    🎓
-                </div>
-
-                <div>
-                    <h1>AI Study Assistant</h1>
-
-                    <p>
-                        Your personal AI learning companion
-                    </p>
-                </div>
-
+            <div class="logo">
+                🎓
             </div>
 
-            <div class="ai-badge">
-                ✨ AI Powered
-            </div>
+            <div>
 
-        </header>
-
-
-
-        <!-- Hero Section -->
-
-        <section class="hero">
-
-            <div class="hero-icon">
-                🧠
-            </div>
-
-            <h2>
-                Learn Smarter.<br>
-                <span>Study Better.</span>
-            </h2>
-
-            <p>
-                Ask questions, understand difficult concepts,
-                summarize topics and test your knowledge with AI.
-            </p>
-
-        </section>
-
-
-
-        <!-- Study Modes -->
-
-        <section class="study-section">
-
-            <h3>
-                Choose your study mode
-            </h3>
-
-            <div class="mode-grid">
-
-
-                <!-- Explain -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode-select"
-                        value="explain"
-                        checked
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon explain-icon">
-                            📚
-                        </div>
-
-                        <div>
-                            <strong>Explain</strong>
-
-                            <span>
-                                Understand a topic
-                            </span>
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- Summarize -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode-select"
-                        value="summarize"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon summarize-icon">
-                            📝
-                        </div>
-
-                        <div>
-                            <strong>Summarize</strong>
-
-                            <span>
-                                Get key points
-                            </span>
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- Quiz -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode-select"
-                        value="quiz"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon quiz-icon">
-                            🧠
-                        </div>
-
-                        <div>
-                            <strong>Quiz Me</strong>
-
-                            <span>
-                                Test your knowledge
-                            </span>
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- Doubt -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode-select"
-                        value="doubt"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon doubt-icon">
-                            ❓
-                        </div>
-
-                        <div>
-                            <strong>Ask a Doubt</strong>
-
-                            <span>
-                                Clear your confusion
-                            </span>
-                        </div>
-
-                    </div>
-
-                </label>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- Question Section -->
-
-        <section class="question-section">
-
-            <form action="/ask" method="POST" id="study-form">
-
-
-                <!-- Hidden mode field -->
-
-                <input
-                    type="hidden"
-                    name="mode"
-                    id="selected-mode"
-                    value="explain"
-                >
-
-
-                <div class="question-title">
-
-                    <div class="title-icon">
-                        ✨
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            What do you want to learn today?
-                        </h3>
-
-                        <p>
-                            Enter a topic, question or doubt below
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-
-                <textarea
-                    name="question"
-                    id="question"
-                    placeholder="Example: Explain Newton's laws of motion in simple words..."
-                    required
-                >{{ question if question else "" }}</textarea>
-
-
-
-                <div class="action-row">
-
-                    <button
-                        type="submit"
-                        class="ask-button"
-                    >
-
-                        <span>
-                            ✨
-                        </span>
-
-                        Ask AI
-
-                        <span>
-                            →
-                        </span>
-
-                    </button>
-
-
-                    <a
-                        href="/clear"
-                        class="clear-button"
-                    >
-                        🗑️ Clear Conversation
-                    </a>
-
-                </div>
-
-
-            </form>
-
-        </section>
-
-
-
-        <!-- AI Response -->
-
-        {% if answer %}
-
-        <section class="response-section">
-
-
-            <div class="response-header">
-
-                <div class="response-title">
-
-                    <div class="ai-response-icon">
-                        🤖
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            AI Response
-                        </h3>
-
-                        <span>
-                            Generated by your AI Study Assistant
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="response-status">
-                    ● Ready
-                </div>
-
-            </div>
-
-
-
-            <!-- Question -->
-
-            <div class="user-question">
-
-                <span>
-                    Your question
-                </span>
+                <h1>AI Study Assistant</h1>
 
                 <p>
-                    {{ question }}
+                    Your personal AI learning companion
                 </p>
 
             </div>
 
+        </div>
 
 
-            <!-- Answer -->
+        <div class="ai-badge">
+            ✨ AI Powered
+        </div>
 
-            <div
-                id="ai-answer"
-                class="ai-answer"
-            ></div>
-
-
-            <!-- Store answer -->
-
-            <script
-                id="answer-data"
-                type="text/plain"
-            >{{ answer }}</script>
+    </header>
 
 
-        </section>
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <div class="hero-icon">
+            🧠
+        </div>
+
+        <h2>
+            Learn Smarter.<br>
+            <span>Study Better.</span>
+        </h2>
+
+        <p>
+            Ask questions, understand difficult concepts,
+            summarize topics and test your knowledge with AI.
+        </p>
+
+    </section>
 
 
-        <script>
 
-            const rawAnswer =
-                document.getElementById("answer-data").textContent;
+    <!-- STUDY MODES -->
 
-            const formattedAnswer =
-                marked.parse(rawAnswer);
+    <section class="study-section">
 
-            document.getElementById("ai-answer").innerHTML =
-                DOMPurify.sanitize(formattedAnswer);
+        <h3>
+            Choose your study mode
+        </h3>
 
-        </script>
+
+        <div class="mode-grid">
+
+
+            <label class="mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="explain"
+                    checked
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon explain-icon">
+                        📚
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Explain
+                        </strong>
+
+                        <span>
+                            Understand a topic
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
+
+            <label class="mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="summarize"
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon summarize-icon">
+                        📝
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Summarize
+                        </strong>
+
+                        <span>
+                            Get key points
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
+
+            <label class="mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="quiz"
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon quiz-icon">
+                        🧠
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Quiz Me
+                        </strong>
+
+                        <span>
+                            Test your knowledge
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
+
+            <label class="mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="doubt"
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon doubt-icon">
+                        ❓
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Ask a Doubt
+                        </strong>
+
+                        <span>
+                            Clear your confusion
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- UPLOAD NOTES -->
+
+    <section class="upload-section">
+
+        <div class="upload-title">
+
+            <div class="upload-icon">
+                📚
+            </div>
+
+            <div>
+
+                <h3>
+                    Upload Study Material
+                </h3>
+
+                <p>
+                    Upload your PDF or DOCX notes and ask questions about them
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form
+            action="/upload"
+            method="POST"
+            enctype="multipart/form-data"
+            class="upload-form"
+        >
+
+            <div class="file-area">
+
+                <input
+                    type="file"
+                    name="study_file"
+                    id="study_file"
+                    accept=".pdf,.docx"
+                    required
+                >
+
+                <label for="study_file">
+
+                    <span class="file-icon">
+                        📄
+                    </span>
+
+                    <strong>
+                        Choose PDF or DOCX
+                    </strong>
+
+                    <span>
+                        Maximum file size: 10 MB
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="upload-button"
+            >
+
+                📤 Upload Notes
+
+            </button>
+
+        </form>
+
+
+        {% if uploaded_file %}
+
+        <div class="uploaded-file">
+
+            <span>
+                ✅
+            </span>
+
+            <div>
+
+                <strong>
+                    Study material loaded
+                </strong>
+
+                <p>
+                    {{ uploaded_file }}
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+
+
+    <!-- QUESTION -->
+
+    <section class="question-section">
+
+
+        <form
+            action="/ask"
+            method="POST"
+            id="study-form"
+        >
+
+
+            <input
+                type="hidden"
+                name="mode"
+                id="selected-mode"
+                value="explain"
+            >
+
+
+            <div class="question-title">
+
+                <div class="title-icon">
+                    ✨
+                </div>
+
+                <div>
+
+                    <h3>
+                        What do you want to learn today?
+                    </h3>
+
+                    <p>
+                        Enter a topic, question or doubt below
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <textarea
+                name="question"
+                id="question"
+                placeholder="Example: Explain Newton's laws of motion in simple words..."
+                required
+            >{{ question if question else "" }}</textarea>
+
+
+
+            <div class="action-row">
+
+
+                <button
+                    type="submit"
+                    class="ask-button"
+                >
+
+                    <span>
+                        ✨
+                    </span>
+
+                    Ask AI
+
+                    <span>
+                        →
+                    </span>
+
+                </button>
+
+
+
+                <a
+                    href="/clear"
+                    class="clear-button"
+                >
+
+                    🗑️ Clear Conversation
+
+                </a>
+
+
+            </div>
+
+
+        </form>
+
+    </section>
+
+
+
+    <!-- RESPONSE -->
+
+    {% if answer %}
+
+    <section class="response-section">
+
+
+        <div class="response-header">
+
+            <div class="response-title">
+
+                <div class="ai-response-icon">
+                    🤖
+                </div>
+
+                <div>
+
+                    <h3>
+                        AI Response
+                    </h3>
+
+                    <span>
+                        Generated by your AI Study Assistant
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="response-status">
+                ● Ready
+            </div>
+
+        </div>
+
+
+
+        {% if question %}
+
+        <div class="user-question">
+
+            <span>
+                Your question
+            </span>
+
+            <p>
+                {{ question }}
+            </p>
+
+        </div>
 
         {% endif %}
 
 
 
-        <!-- Footer -->
-
-        <footer>
-
-            <p>
-                🎓 AI Study Assistant
-            </p>
-
-            <span>
-                Learn • Practice • Improve
-            </span>
-
-        </footer>
+        <div
+            id="ai-answer"
+            class="ai-answer"
+        ></div>
 
 
-    </div>
+        <script
+            id="answer-data"
+            type="text/plain"
+        >{{ answer }}</script>
 
 
+    </section>
 
-    <!-- JavaScript -->
 
     <script>
 
-        const modeCards =
-            document.querySelectorAll('input[name="mode-select"]');
-
-        const selectedMode =
-            document.getElementById("selected-mode");
+        const rawAnswer =
+            document.getElementById("answer-data").textContent;
 
 
-        modeCards.forEach(function(card) {
-
-            card.addEventListener("change", function() {
-
-                selectedMode.value = this.value;
-
-            });
-
-        });
+        const formattedAnswer =
+            marked.parse(rawAnswer);
 
 
-        // Keep selected mode after response
-
-        {% if selected_mode %}
-
-        const currentMode = "{{ selected_mode }}";
-
-        modeCards.forEach(function(card) {
-
-            if (card.value === currentMode) {
-
-                card.checked = true;
-
-                selectedMode.value = currentMode;
-
-            }
-
-        });
-
-        {% endif %}
+        document.getElementById("ai-answer").innerHTML =
+            DOMPurify.sanitize(formattedAnswer);
 
     </script>
+
+    {% endif %}
+
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        <p>
+            🎓 AI Study Assistant
+        </p>
+
+        <span>
+            Learn • Practice • Improve
+        </span>
+
+    </footer>
+
+
+</div>
+
+
+
+<!-- STUDY MODE SCRIPT -->
+
+<script>
+
+    const modeCards =
+        document.querySelectorAll(
+            'input[name="mode-select"]'
+        );
+
+
+    const selectedMode =
+        document.getElementById(
+            "selected-mode"
+        );
+
+
+    modeCards.forEach(function(card) {
+
+        card.addEventListener(
+            "change",
+            function() {
+
+                selectedMode.value =
+                    this.value;
+
+            }
+        );
+
+    });
+
+
+    {% if selected_mode %}
+
+    const currentMode =
+        "{{ selected_mode }}";
+
+
+    modeCards.forEach(function(card) {
+
+        if (card.value === currentMode) {
+
+            card.checked = true;
+
+            selectedMode.value =
+                currentMode;
+
+        }
+
+    });
+
+    {% endif %}
+
+</script>
 
 
 </body>
