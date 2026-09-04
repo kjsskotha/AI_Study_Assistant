@@ -81,7 +81,7 @@ is not actually present.
 
 
 # --------------------------------------------------
-# GET OR CREATE SESSION ID
+# SESSION ID
 # --------------------------------------------------
 
 def get_session_id():
@@ -98,7 +98,7 @@ def get_session_id():
 
 
 # --------------------------------------------------
-# GET USER FOLDER
+# USER FOLDER
 # --------------------------------------------------
 
 def get_user_folder():
@@ -147,7 +147,7 @@ def get_filename_file():
 
 
 # --------------------------------------------------
-# GET UPLOADED FILE NAME
+# FILE NAME
 # --------------------------------------------------
 
 def get_uploaded_file_name():
@@ -167,10 +167,6 @@ def get_uploaded_file_name():
     return None
 
 
-# --------------------------------------------------
-# SAVE UPLOADED FILE NAME
-# --------------------------------------------------
-
 def save_uploaded_file_name(filename):
 
     path = get_filename_file()
@@ -185,7 +181,7 @@ def save_uploaded_file_name(filename):
 
 
 # --------------------------------------------------
-# SAVE CONVERSATION
+# CONVERSATION
 # --------------------------------------------------
 
 def save_conversation(conversation):
@@ -212,10 +208,6 @@ def save_conversation(conversation):
                 "-----MESSAGE-END-----\n"
             )
 
-
-# --------------------------------------------------
-# LOAD CONVERSATION
-# --------------------------------------------------
 
 def load_conversation():
 
@@ -253,7 +245,6 @@ def load_conversation():
         block = block.strip()
 
         if not block:
-
             continue
 
 
@@ -264,7 +255,6 @@ def load_conversation():
 
 
         if len(lines) != 2:
-
             continue
 
 
@@ -301,7 +291,7 @@ def load_conversation():
 
 
 # --------------------------------------------------
-# SAVE NOTES
+# NOTES
 # --------------------------------------------------
 
 def save_notes(text):
@@ -317,16 +307,11 @@ def save_notes(text):
         file.write(text)
 
 
-# --------------------------------------------------
-# LOAD NOTES
-# --------------------------------------------------
-
 def load_notes():
 
     path = get_notes_file()
 
     if not os.path.exists(path):
-
         return ""
 
 
@@ -340,7 +325,7 @@ def load_notes():
 
 
 # --------------------------------------------------
-# PDF TEXT EXTRACTION
+# PDF EXTRACTION
 # --------------------------------------------------
 
 def extract_pdf_text(file_path):
@@ -375,7 +360,7 @@ def extract_pdf_text(file_path):
 
 
 # --------------------------------------------------
-# DOCX TEXT EXTRACTION
+# DOCX EXTRACTION
 # --------------------------------------------------
 
 def extract_docx_text(file_path):
@@ -401,7 +386,7 @@ def extract_docx_text(file_path):
 
 
 # --------------------------------------------------
-# SELECT TEXT EXTRACTION METHOD
+# TEXT EXTRACTION
 # --------------------------------------------------
 
 def extract_text(
@@ -427,26 +412,21 @@ def extract_text(
 
 
 # --------------------------------------------------
-# HOME PAGE
+# HOME
 # --------------------------------------------------
 
 @app.route("/")
 def home():
 
-    uploaded_file = (
-        get_uploaded_file_name()
-    )
-
-
     return render_template(
         "index.html",
         answer=None,
-        uploaded_file=uploaded_file
+        uploaded_file=get_uploaded_file_name()
     )
 
 
 # --------------------------------------------------
-# UPLOAD STUDY MATERIAL
+# UPLOAD
 # --------------------------------------------------
 
 @app.route(
@@ -472,17 +452,13 @@ def upload():
     filename = file.filename.lower()
 
 
-    # Check file type
-
     if filename.endswith(".pdf"):
 
         extension = ".pdf"
 
-
     elif filename.endswith(".docx"):
 
         extension = ".docx"
-
 
     else:
 
@@ -492,8 +468,6 @@ def upload():
             uploaded_file=get_uploaded_file_name()
         )
 
-
-    # Create unique file name
 
     unique_name = (
         str(uuid.uuid4())
@@ -509,22 +483,16 @@ def upload():
 
     try:
 
-        # Save file
-
         file.save(
             file_path
         )
 
-
-        # Extract text
 
         extracted_text = extract_text(
             file_path,
             extension
         )
 
-
-        # Check extracted text
 
         if not extracted_text.strip():
 
@@ -543,29 +511,21 @@ def upload():
             )
 
 
-        # Save notes
-
         save_notes(
             extracted_text
         )
 
-
-        # Save original file name
 
         save_uploaded_file_name(
             file.filename
         )
 
 
-        # Start fresh conversation
-
         conversation = [
-
             {
                 "role": "system",
                 "content": system_instruction
             }
-
         ]
 
 
@@ -580,7 +540,7 @@ def upload():
 
             answer=(
                 "Your study material was uploaded successfully. "
-                "You can now ask questions about it."
+                "You can now study with AI."
             ),
 
             uploaded_file=file.filename
@@ -641,12 +601,8 @@ def ask():
     )
 
 
-    uploaded_file = (
-        get_uploaded_file_name()
-    )
+    uploaded_file = get_uploaded_file_name()
 
-
-    # Check question
 
     if not user_question:
 
@@ -654,9 +610,7 @@ def ask():
 
             "index.html",
 
-            answer=(
-                "Please enter a question or topic."
-            ),
+            answer="Please enter a question or topic.",
 
             question="",
 
@@ -668,7 +622,7 @@ def ask():
 
 
     # --------------------------------------------------
-    # EXPLAIN MODE
+    # EXPLAIN
     # --------------------------------------------------
 
     if study_mode == "explain":
@@ -690,7 +644,7 @@ use it as the main source.
 
 
     # --------------------------------------------------
-    # SUMMARIZE MODE
+    # SUMMARIZE
     # --------------------------------------------------
 
     elif study_mode == "summarize":
@@ -709,14 +663,11 @@ Include:
 Use headings and bullet points.
 
 Keep the summary easy to revise.
-
-If study material is uploaded,
-summarize mainly from that material.
 """
 
 
     # --------------------------------------------------
-    # QUIZ MODE
+    # QUIZ
     # --------------------------------------------------
 
     elif study_mode == "quiz":
@@ -738,7 +689,7 @@ create the questions mainly from that material.
 
 
     # --------------------------------------------------
-    # DOUBT MODE
+    # DOUBT
     # --------------------------------------------------
 
     elif study_mode == "doubt":
@@ -758,7 +709,7 @@ use it as the main source.
 
 
     # --------------------------------------------------
-    # NOTES MODE
+    # NOTES
     # --------------------------------------------------
 
     elif study_mode == "notes":
@@ -770,17 +721,6 @@ Reply in the same language as the student's question.
 
 Use the uploaded study material as the MAIN SOURCE.
 
-If the student asks for:
-
-- Important exam questions
-- Important topics
-- Important definitions
-- Revision questions
-- Exam preparation
-- Questions from my notes
-
-Create the response mainly from the uploaded material.
-
 For exam questions, organize them into:
 
 1. Very Short Answer Questions
@@ -789,29 +729,23 @@ For exam questions, organize them into:
 
 Do not invent topics that are not present
 in the uploaded study material.
-
-If something is not available in the notes,
-clearly say that it is not found in the
-uploaded material.
 """
 
 
     # --------------------------------------------------
-    # FLASHCARDS MODE
+    # FLASHCARDS
     # --------------------------------------------------
 
     elif study_mode == "flashcards":
 
         instruction = """
-The student wants to create AI flashcards
-from their uploaded study material.
+Create study flashcards from the uploaded notes.
 
 Reply in the same language as the student's question.
 
-Create useful study flashcards mainly from
-the uploaded study material.
+Create around 10 flashcards.
 
-Each flashcard must contain:
+Each flashcard should contain:
 
 FLASHCARD 1
 
@@ -821,23 +755,67 @@ A clear question about an important concept.
 Answer:
 A short and accurate answer.
 
-Create around 10 flashcards.
-
 Focus on:
-- Important definitions
+- Definitions
 - Important concepts
 - Key facts
-- Important formulas when present
-- Important differences
-- Important points for revision
+- Formulas when present
+- Differences
+- Important revision points
 
-Keep the answers short and easy to remember.
+Use the uploaded notes as the main source.
 
-Do not invent information that is not present
-in the uploaded study material.
+Do not invent information that is not in the notes.
+"""
 
-If the requested information is not available
-in the notes, clearly say so.
+
+    # --------------------------------------------------
+    # STUDY PLAN
+    # --------------------------------------------------
+
+    elif study_mode == "studyplan":
+
+        instruction = """
+Create a practical and realistic study plan for the student.
+
+Reply in the same language as the student's question.
+
+Understand the student's:
+- Subject or subjects
+- Number of days
+- Available study time
+- Exam or target date if provided
+- Uploaded study material if available
+
+If the student has uploaded notes,
+build the plan mainly around the topics in those notes.
+
+Organize the plan clearly.
+
+Use:
+
+1. Study Plan Overview
+2. Daily Schedule
+3. Topics to Study
+4. Practice / Questions
+5. Revision
+6. Final Review
+
+For each day, mention:
+- What to study
+- Approximate time
+- What to practice
+- What to revise
+
+Keep the plan realistic.
+
+Do not suggest studying continuously without breaks.
+
+Include reasonable short breaks.
+
+If the student has not provided enough information,
+make a sensible general study plan and clearly state
+the assumptions you made.
 """
 
 
@@ -864,10 +842,6 @@ Reply in the same language as the student's question.
     document_text = load_notes()
 
 
-    # --------------------------------------------------
-    # NOTES FOR AI
-    # --------------------------------------------------
-
     maximum_document_chars = 50000
 
 
@@ -881,10 +855,10 @@ Reply in the same language as the student's question.
         notes_instruction = f"""
 The student has uploaded study material.
 
-Use this material as the main source.
+Use this material as the main source when relevant.
 
-Do not claim that information is in the
-material if it is not actually present.
+Do not claim information is in the material
+if it is not actually present.
 
 ----- BEGIN STUDY MATERIAL -----
 
@@ -901,9 +875,8 @@ No study material has been uploaded.
 
 Answer the student's question normally.
 
-If the student selected a notes-based mode,
-tell them that they need to upload study
-material first.
+If the student asks for a plan based on their notes,
+tell them that they need to upload their notes first.
 """
 
 
@@ -931,10 +904,6 @@ material first.
     )
 
 
-    # --------------------------------------------------
-    # ADD USER QUESTION
-    # --------------------------------------------------
-
     conversation.append(
 
         {
@@ -946,7 +915,7 @@ material first.
 
 
     # --------------------------------------------------
-    # SEND TO GROQ
+    # GROQ REQUEST
     # --------------------------------------------------
 
     try:
@@ -1002,7 +971,7 @@ material first.
 
 
     # --------------------------------------------------
-    # DISPLAY ANSWER
+    # DISPLAY
     # --------------------------------------------------
 
     return render_template(
@@ -1021,7 +990,7 @@ material first.
 
 
 # --------------------------------------------------
-# CLEAR CONVERSATION
+# CLEAR
 # --------------------------------------------------
 
 @app.route("/clear")
@@ -1058,8 +1027,6 @@ def clear():
             error
         )
 
-
-    # Create fresh conversation
 
     conversation = [
 
@@ -1109,7 +1076,7 @@ def file_too_large(error):
 
 
 # --------------------------------------------------
-# RUN APPLICATION
+# RUN
 # --------------------------------------------------
 
 if __name__ == "__main__":
