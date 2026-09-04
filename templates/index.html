@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
     <title>AI Study Assistant</title>
@@ -18,14 +19,38 @@
         <h1>AI Study Assistant</h1>
 
         <p class="subtitle">
-            Ask questions and learn with AI
+            Learn smarter with AI
         </p>
 
         <form action="/ask" method="POST">
 
+            <label for="mode">
+                Choose Study Mode
+            </label>
+
+            <select name="mode" id="mode">
+
+                <option value="explain">
+                    Explain a Topic
+                </option>
+
+                <option value="summarize">
+                    Summarize
+                </option>
+
+                <option value="quiz">
+                    Quiz Me
+                </option>
+
+                <option value="doubt">
+                    Ask a Doubt
+                </option>
+
+            </select>
+
             <textarea
                 name="question"
-                placeholder="Enter your study question..."
+                placeholder="Enter your topic or question..."
                 required
             ></textarea>
 
@@ -41,13 +66,17 @@
 
             <h2>AI Response</h2>
 
-            <p><strong>Your question:</strong></p>
+            <p>
+                <strong>Your question:</strong>
+            </p>
 
             <p>{{ question }}</p>
 
             <hr>
 
-            <p>{{ answer }}</p>
+            <div class="ai-answer">
+                {{ answer }}
+            </div>
 
         </div>
 
@@ -56,4 +85,5 @@
     </div>
 
 </body>
+
 </html>
