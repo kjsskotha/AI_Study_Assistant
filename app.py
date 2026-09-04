@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from groq import Groq
 import os
 import uuid
+import json
 import PyPDF2
 from docx import Document
 
@@ -22,7 +23,7 @@ os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
 # =========================================
-# SESSION / USER STORAGE
+# SESSION STORAGE
 # =========================================
 
 def get_session_id():
@@ -63,6 +64,13 @@ def get_filename_file():
     return os.path.join(
         get_user_folder(),
         "filename.txt"
+    )
+
+
+def get_quiz_file():
+    return os.path.join(
+        get_user_folder(),
+        "quiz.json"
     )
 
 
@@ -201,7 +209,58 @@ def load_notes():
 
 
 # =========================================
-# PDF
+# QUIZ STORAGE
+# =========================================
+
+def save_quiz(quiz):
+
+    with open(
+        get_quiz_file(),
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            quiz,
+            file,
+            ensure_ascii=False,
+            indent=2
+        )
+
+
+def load_quiz():
+
+    filename = get_quiz_file()
+
+    if not os.path.exists(filename):
+        return None
+
+    try:
+
+        with open(
+            filename,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            return json.load(file)
+
+    except Exception:
+
+        return None
+
+
+def delete_quiz():
+
+    filename = get_quiz_file()
+
+    if os.path.exists(filename):
+
+        os.remove(filename)
+
+
+# =========================================
+# PDF EXTRACTION
 # =========================================
 
 def extract_pdf_text(file):
@@ -223,7 +282,7 @@ def extract_pdf_text(file):
 
 
 # =========================================
-# DOCX
+# DOCX EXTRACTION
 # =========================================
 
 def extract_docx_text(file):
@@ -272,7 +331,8 @@ def home():
         "index.html",
         conversation=load_conversation(),
         notes=load_notes(),
-        filename=get_uploaded_file_name()
+        filename=get_uploaded_file_name(),
+        quiz=load_quiz()
     )
 
 
@@ -286,16 +346,19 @@ def upload():
     uploaded_file = request.files.get("file")
 
     if not uploaded_file:
+
         return redirect(url_for("home"))
 
     filename = uploaded_file.filename
 
     if not filename:
+
         return redirect(url_for("home"))
 
     extension = filename.lower().split(".")[-1]
 
     if extension not in ["pdf", "docx"]:
+
         return redirect(url_for("home"))
 
     try:
@@ -306,6 +369,7 @@ def upload():
         )
 
         if not text.strip():
+
             return redirect(url_for("home"))
 
         save_notes(text)
@@ -329,17 +393,269 @@ def upload():
 
         save_conversation([])
 
-        return redirect(url_for("home"))
+        delete_quiz()
+
+        return redirect(
+            url_for("home")
+        )
 
     except Exception as e:
 
         print("Upload error:", e)
 
-        return redirect(url_for("home"))
+        return redirect(
+            url_for("home")
+        )
 
 
 # =========================================
-# ASK AI
+# GENERATE QUIZ
+# =========================================
+
+@app.route("/generate_quiz", methods=["POST"])
+def generate_quiz():
+
+    topic = request.form.get(
+        "quiz_topic",
+        ""
+    ).strip()
+
+    notes = load_notes()
+
+    if not topic:
+
+        topic = "the student's study material"
+
+
+    notes_context = ""
+
+    if notes.strip():
+
+        notes_context = f"""
+
+Use the following uploaded study material
+as the main source for the quiz.
+
+Do not create questions from information
+that is not supported by these notes.
+
+STUDY MATERIAL:
+
+-------------------------
+{notes[:50000]}
+-------------------------
+
+"""
+
+
+    prompt = f"""
+
+You are an AI quiz generator.
+
+Create exactly 5 multiple-choice questions
+for a student.
+
+Topic:
+{topic}
+
+{notes_context}
+
+Return ONLY valid JSON.
+
+The JSON must have exactly this structure:
+
+{{
+    "title": "Quiz",
+    "questions": [
+        {{
+            "question": "Question text",
+            "options": [
+                "Option A",
+                "Option B",
+                "Option C",
+                "Option D"
+            ],
+            "answer": 0,
+            "explanation": "Short explanation"
+        }}
+    ]
+}}
+
+Important:
+
+- "answer" must be a number.
+- 0 means Option A.
+- 1 means Option B.
+- 2 means Option C.
+- 3 means Option D.
+- Exactly 5 questions.
+- Exactly 4 options per question.
+- Do not include answers outside the JSON.
+- Keep questions suitable for students.
+"""
+
+
+    try:
+
+        response = client.chat.completions.create(
+
+            model="openai/gpt-oss-20b",
+
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Return only valid JSON."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+
+        )
+
+        content = (
+            response
+            .choices[0]
+            .message
+            .content
+        )
+
+
+        # Remove possible markdown fences
+
+        content = content.strip()
+
+        if content.startswith("```"):
+
+            content = content.replace(
+                "```json",
+                ""
+            )
+
+            content = content.replace(
+                "```",
+                ""
+            )
+
+            content = content.strip()
+
+
+        quiz = json.loads(content)
+
+
+        if (
+            "questions" not in quiz
+            or len(quiz["questions"]) != 5
+        ):
+
+            raise ValueError(
+                "Invalid quiz format"
+            )
+
+
+        save_quiz(quiz)
+
+        return redirect(
+            url_for("home")
+        )
+
+
+    except Exception as e:
+
+        print("Quiz generation error:", e)
+
+        return redirect(
+            url_for("home")
+        )
+
+
+# =========================================
+# SUBMIT QUIZ
+# =========================================
+
+@app.route("/submit_quiz", methods=["POST"])
+def submit_quiz():
+
+    quiz = load_quiz()
+
+    if not quiz:
+
+        return redirect(
+            url_for("home")
+        )
+
+
+    score = 0
+
+    results = []
+
+
+    for index, question in enumerate(
+        quiz["questions"]
+    ):
+
+        selected = request.form.get(
+            f"question_{index}"
+        )
+
+
+        correct_answer = int(
+            question["answer"]
+        )
+
+
+        is_correct = (
+            selected is not None
+            and int(selected) == correct_answer
+        )
+
+
+        if is_correct:
+
+            score += 1
+
+
+        results.append({
+
+            "question": question["question"],
+
+            "selected": (
+                int(selected)
+                if selected is not None
+                else None
+            ),
+
+            "correct": correct_answer,
+
+            "is_correct": is_correct,
+
+            "explanation":
+                question.get(
+                    "explanation",
+                    ""
+                )
+
+        })
+
+
+    quiz["results"] = results
+
+    quiz["score"] = score
+
+    quiz["submitted"] = True
+
+
+    save_quiz(quiz)
+
+
+    return redirect(
+        url_for("home")
+    )
+
+
+# =========================================
+# NORMAL AI ASK
 # =========================================
 
 @app.route("/ask", methods=["POST"])
@@ -355,18 +671,18 @@ def ask():
         "explain"
     )
 
+
     if not user_question:
 
-        return redirect(url_for("home"))
+        return redirect(
+            url_for("home")
+        )
+
 
     notes = load_notes()
 
     conversation = load_conversation()
 
-
-    # =====================================
-    # BASE INSTRUCTION
-    # =====================================
 
     base_instruction = """
 
@@ -393,36 +709,28 @@ tables, formulas and examples when useful.
 """
 
 
-    # =====================================
-    # EXPLAIN
-    # =====================================
-
     if study_mode == "explain":
 
         instruction = """
 
-Explain the topic clearly for a student.
+Explain the topic clearly.
 
 Start with a simple definition.
 
-Explain the concept step by step.
+Explain step by step.
 
-Give a simple example when useful.
+Give an example when useful.
 
 End with important points to remember.
 
 """
 
 
-    # =====================================
-    # SUMMARIZE
-    # =====================================
-
     elif study_mode == "summarize":
 
         instruction = """
 
-Summarize the topic clearly.
+Summarize the topic.
 
 Include:
 
@@ -432,75 +740,8 @@ Include:
 - Important examples
 - Exam points
 
-Keep the summary concise and useful for
-revision.
-
 """
 
-
-    # =====================================
-    # IMPROVED QUIZ
-    # =====================================
-
-    elif study_mode == "quiz":
-
-        instruction = """
-
-Create a practice quiz for the student.
-
-Create exactly 5 multiple-choice questions.
-
-Use this format for every question:
-
-### Question 1
-
-Question text
-
-A) Option
-
-B) Option
-
-C) Option
-
-D) Option
-
-
-Do NOT show the correct answers immediately.
-
-After all 5 questions, write:
-
-### Answer Format
-
-Ask the student to reply like:
-
-1-A
-2-C
-3-B
-4-D
-5-A
-
-Tell the student that after they submit
-their answers, you will check them and provide:
-
-- Score
-- Correct answers
-- Explanation for each question
-- Topics that need more revision
-
-If uploaded study notes are available,
-create the quiz mainly from those notes.
-
-Do not invent information that is not
-supported by the uploaded notes.
-
-Keep the questions suitable for a student.
-
-"""
-
-
-    # =====================================
-    # DOUBT
-    # =====================================
 
     elif study_mode == "doubt":
 
@@ -508,21 +749,14 @@ Keep the questions suitable for a student.
 
 The student has a doubt.
 
-Understand what the student is confused
-about.
+Understand what they are confused about.
 
 Explain the concept step by step.
 
-Give a simple example if useful.
-
-Correct misunderstandings politely.
+Give an example if useful.
 
 """
 
-
-    # =====================================
-    # NOTES
-    # =====================================
 
     elif study_mode == "notes":
 
@@ -531,8 +765,8 @@ Correct misunderstandings politely.
 Use the uploaded study material as the
 main source.
 
-Do not invent information that is not
-supported by the uploaded notes.
+Do not invent information not supported
+by the notes.
 
 Generate important exam questions.
 
@@ -542,16 +776,8 @@ Organize them into:
 2. Short Answer Questions
 3. Long Answer Questions
 
-Focus on important definitions,
-concepts, differences, explanations,
-examples and formulas present in the notes.
-
 """
 
-
-    # =====================================
-    # FLASHCARDS
-    # =====================================
 
     elif study_mode == "flashcards":
 
@@ -564,29 +790,13 @@ Each flashcard should contain:
 Question:
 Answer:
 
-Focus on:
+Focus on definitions, concepts, facts,
+formulas, differences and revision points.
 
-- Definitions
-- Important concepts
-- Facts
-- Formulas
-- Differences
-- Revision points
-
-If notes are uploaded, use them as the
-main source.
-
-Do not invent information that is not
-supported by the notes.
-
-Keep flashcards short and useful.
+Use uploaded notes when available.
 
 """
 
-
-    # =====================================
-    # STUDY PLAN
-    # =====================================
 
     elif study_mode == "studyplan":
 
@@ -599,13 +809,10 @@ Understand:
 - Subject
 - Number of days
 - Available study time
-- Exam date if provided
+- Exam date
 - Uploaded study material
 
-If notes are uploaded, build the plan
-mainly around those notes.
-
-Organize the response using:
+Organize using:
 
 1. Study Plan Overview
 2. Daily Schedule
@@ -614,18 +821,16 @@ Organize the response using:
 5. Revision
 6. Final Review
 
-For every day mention:
-
-- What to study
-- Approximate time
-- What to practice
-- What to revise
-
 Include reasonable short breaks.
 
-Keep the plan realistic.
-
 """
+
+
+    elif study_mode == "quiz":
+
+        return redirect(
+            url_for("home")
+        )
 
 
     else:
@@ -637,32 +842,20 @@ Answer the student's question clearly.
 """
 
 
-    # =====================================
-    # NOTES CONTEXT
-    # =====================================
-
     notes_context = ""
 
     if notes.strip():
-
-        limited_notes = notes[:50000]
 
         notes_context = f"""
 
 Uploaded study material:
 
 -------------------------
-{limited_notes}
+{notes[:50000]}
 -------------------------
-
-Use this material when relevant.
 
 """
 
-
-    # =====================================
-    # SYSTEM PROMPT
-    # =====================================
 
     system_prompt = (
         base_instruction
@@ -671,38 +864,35 @@ Use this material when relevant.
     )
 
 
-    # =====================================
-    # MESSAGES
-    # =====================================
-
     messages = [
+
         {
             "role": "system",
             "content": system_prompt
         }
+
     ]
 
 
-    recent_conversation = conversation[-10:]
-
-
-    for message in recent_conversation:
+    for message in conversation[-10:]:
 
         messages.append({
+
             "role": message["role"],
+
             "content": message["content"]
+
         })
 
 
     messages.append({
+
         "role": "user",
+
         "content": user_question
+
     })
 
-
-    # =====================================
-    # GROQ
-    # =====================================
 
     try:
 
@@ -721,6 +911,7 @@ Use this material when relevant.
             .content
         )
 
+
     except Exception as e:
 
         print("Groq error:", e)
@@ -735,10 +926,6 @@ Please try again in a moment.
 """
 
 
-    # =====================================
-    # SAVE
-    # =====================================
-
     conversation.append({
 
         "role": "user",
@@ -747,6 +934,7 @@ Please try again in a moment.
 
     })
 
+
     conversation.append({
 
         "role": "assistant",
@@ -754,6 +942,7 @@ Please try again in a moment.
         "content": ai_response
 
     })
+
 
     save_conversation(
         conversation
@@ -775,37 +964,25 @@ def clear():
     user_folder = get_user_folder()
 
 
-    for filename in [
-        "conversation.txt",
-        "notes.txt",
-        "filename.txt"
-    ]:
+    for filename in os.listdir(
+        user_folder
+    ):
 
         file_path = os.path.join(
             user_folder,
             filename
         )
 
-        if os.path.exists(file_path):
 
-            os.remove(file_path)
+        if os.path.isfile(file_path):
 
+            try:
 
-    if os.path.exists(user_folder):
+                os.remove(file_path)
 
-        for filename in os.listdir(user_folder):
+            except Exception:
 
-            file_path = os.path.join(
-                user_folder,
-                filename
-            )
-
-            if os.path.isfile(file_path):
-
-                try:
-                    os.remove(file_path)
-                except Exception:
-                    pass
+                pass
 
 
     return redirect(
