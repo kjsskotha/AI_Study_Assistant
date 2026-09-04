@@ -4,10 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# Get the API key from an environment variable
+# Get API key from environment variable
 api_key = os.environ.get("GROQ_API_KEY")
 
-# Create Groq client
+# Connect to Groq
 client = Groq(api_key=api_key)
 
 
@@ -20,23 +20,59 @@ def home():
 def ask():
 
     user_question = request.form.get("question")
+    study_mode = request.form.get("mode")
+
+    if study_mode == "explain":
+        instruction = """
+        Explain the topic clearly for a student.
+        Use simple language, headings, bullet points and examples.
+        Break difficult ideas into smaller parts.
+        """
+
+    elif study_mode == "summarize":
+        instruction = """
+        Summarize the given topic clearly.
+        Include only the important points.
+        Use headings and bullet points.
+        Keep the explanation easy to study and remember.
+        """
+
+    elif study_mode == "quiz":
+        instruction = """
+        Create a short quiz about the given topic.
+        Give 5 questions.
+        Mix multiple-choice and short-answer questions.
+        Do not immediately reveal the answers.
+        At the end, provide an answer key separately.
+        """
+
+    elif study_mode == "doubt":
+        instruction = """
+        Answer the student's doubt clearly.
+        Explain the concept step by step.
+        Use a simple example if useful.
+        """
+
+    else:
+        instruction = """
+        Help the student understand the topic clearly.
+        """
+
+    system_instruction = f"""
+    You are an AI Study Assistant.
+
+    {instruction}
+
+    Be educational, accurate and easy to understand.
+    Do not make the explanation unnecessarily complicated.
+    """
 
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
         messages=[
             {
                 "role": "system",
-                "content": """
-                You are an AI Study Assistant.
-
-                Help students understand their subjects.
-
-                Explain concepts clearly and simply.
-                Break difficult topics into smaller parts.
-                Use examples when useful.
-                Use headings and bullet points.
-                Be educational and easy to understand.
-                """
+                "content": system_instruction
             },
             {
                 "role": "user",
@@ -50,7 +86,8 @@ def ask():
     return render_template(
         "index.html",
         question=user_question,
-        answer=answer
+        answer=answer,
+        selected_mode=study_mode
     )
 
 
