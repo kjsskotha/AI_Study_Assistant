@@ -10,10 +10,7 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
-    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- Security -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 </head>
 
@@ -38,17 +35,14 @@
             </div>
 
             <div>
-
                 <h1>AI Study Assistant</h1>
 
                 <p>
                     Your personal AI learning companion
                 </p>
-
             </div>
 
         </div>
-
 
         <div class="ai-badge">
             ✨ AI Powered
@@ -92,6 +86,8 @@
         <div class="mode-grid">
 
 
+            <!-- EXPLAIN -->
+
             <label class="mode-card">
 
                 <input
@@ -125,6 +121,8 @@
 
 
 
+            <!-- SUMMARIZE -->
+
             <label class="mode-card">
 
                 <input
@@ -156,6 +154,8 @@
             </label>
 
 
+
+            <!-- QUIZ -->
 
             <label class="mode-card">
 
@@ -189,6 +189,8 @@
 
 
 
+            <!-- DOUBT -->
+
             <label class="mode-card">
 
                 <input
@@ -220,13 +222,47 @@
             </label>
 
 
+
+            <!-- MY NOTES -->
+
+            <label class="mode-card notes-mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="notes"
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon notes-icon">
+                        📄
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Ask from My Notes
+                        </strong>
+
+                        <span>
+                            Ask questions from uploaded notes
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
         </div>
 
     </section>
 
 
 
-    <!-- UPLOAD NOTES -->
+    <!-- UPLOAD STUDY MATERIAL -->
 
     <section class="upload-section">
 
@@ -291,9 +327,7 @@
                 type="submit"
                 class="upload-button"
             >
-
                 📤 Upload Notes
-
             </button>
 
         </form>
@@ -327,7 +361,7 @@
 
 
 
-    <!-- QUESTION -->
+    <!-- QUESTION SECTION -->
 
     <section class="question-section">
 
@@ -359,7 +393,7 @@
                         What do you want to learn today?
                     </h3>
 
-                    <p>
+                    <p id="question-help">
                         Enter a topic, question or doubt below
                     </p>
 
@@ -419,7 +453,7 @@
 
 
 
-    <!-- RESPONSE -->
+    <!-- AI RESPONSE -->
 
     {% if answer %}
 
@@ -495,10 +529,8 @@
         const rawAnswer =
             document.getElementById("answer-data").textContent;
 
-
         const formattedAnswer =
             marked.parse(rawAnswer);
-
 
         document.getElementById("ai-answer").innerHTML =
             DOMPurify.sanitize(formattedAnswer);
@@ -528,7 +560,7 @@
 
 
 
-<!-- STUDY MODE SCRIPT -->
+<!-- JAVASCRIPT -->
 
 <script>
 
@@ -544,6 +576,18 @@
         );
 
 
+    const questionBox =
+        document.getElementById(
+            "question"
+        );
+
+
+    const questionHelp =
+        document.getElementById(
+            "question-help"
+        );
+
+
     modeCards.forEach(function(card) {
 
         card.addEventListener(
@@ -553,10 +597,62 @@
                 selectedMode.value =
                     this.value;
 
+
+                if (this.value === "notes") {
+
+                    questionBox.placeholder =
+                        "Example: What are the important points in my notes?";
+
+                    questionHelp.textContent =
+                        "Ask a question based on your uploaded study material.";
+
+                }
+
+                else if (this.value === "quiz") {
+
+                    questionBox.placeholder =
+                        "Example: Create a quiz about this topic...";
+
+                    questionHelp.textContent =
+                        "Enter a topic to test your knowledge.";
+
+                }
+
+                else if (this.value === "summarize") {
+
+                    questionBox.placeholder =
+                        "Example: Summarize this topic in simple points...";
+
+                    questionHelp.textContent =
+                        "Get the most important points for revision.";
+
+                }
+
+                else if (this.value === "doubt") {
+
+                    questionBox.placeholder =
+                        "Example: Why does this concept work this way?";
+
+                    questionHelp.textContent =
+                        "Ask anything you are confused about.";
+
+                }
+
+                else {
+
+                    questionBox.placeholder =
+                        "Example: Explain Newton's laws of motion in simple words...";
+
+                    questionHelp.textContent =
+                        "Enter a topic, question or doubt below.";
+
+                }
+
             }
         );
 
     });
+
 
 
     {% if selected_mode %}
