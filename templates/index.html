@@ -17,10 +17,8 @@
         href="{{ url_for('static', filename='style.css') }}"
     >
 
-    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- Security -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
 </head>
@@ -28,10 +26,6 @@
 
 <body>
 
-
-<!-- ===================================== -->
-<!-- HEADER -->
-<!-- ===================================== -->
 
 <header class="header">
 
@@ -68,62 +62,377 @@
 
 
 
-<!-- ===================================== -->
-<!-- MAIN -->
-<!-- ===================================== -->
-
 <main class="container">
 
 
-    <!-- ================================= -->
-    <!-- HERO -->
-    <!-- ================================= -->
+<section class="hero">
 
-    <section class="hero">
+    <span class="hero-label">
+        🚀 Your Personal Study Partner
+    </span>
 
-        <div class="hero-content">
+    <h2>
+        Learn Smarter.<br>
+        <span>Study Better.</span>
+    </h2>
 
-            <span class="hero-label">
-                🚀 Your Personal Study Partner
-            </span>
+    <p>
+        Understand difficult topics, summarize notes,
+        take interactive quizzes, create flashcards
+        and build personalized study plans with AI.
+    </p>
 
-            <h2>
-                Learn Smarter.<br>
-                <span>Study Better.</span>
-            </h2>
+</section>
+
+
+
+<section class="section-card">
+
+    <div class="section-title">
+
+        <div class="section-number">
+            01
+        </div>
+
+        <div>
+
+            <h3>
+                Choose Study Mode
+            </h3>
 
             <p>
-                Understand difficult topics, summarize notes,
-                generate quizzes, create flashcards and build
-                personalized study plans with AI.
+                Select how you want the AI to help you.
             </p>
 
         </div>
 
-    </section>
+    </div>
+
+
+    <div class="mode-grid">
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="explain"
+                checked
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon explain-icon">
+                    💡
+                </div>
+
+                <div>
+
+                    <strong>
+                        Explain
+                    </strong>
+
+                    <span>
+                        Understand topics easily
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="summarize"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon summarize-icon">
+                    📝
+                </div>
+
+                <div>
+
+                    <strong>
+                        Summarize
+                    </strong>
+
+                    <span>
+                        Get important points
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="quiz"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon quiz-icon">
+                    🧠
+                </div>
+
+                <div>
+
+                    <strong>
+                        Quiz Me
+                    </strong>
+
+                    <span>
+                        Take an interactive quiz
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="doubt"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon doubt-icon">
+                    ❓
+                </div>
+
+                <div>
+
+                    <strong>
+                        Ask a Doubt
+                    </strong>
+
+                    <span>
+                        Clear your confusion
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="notes"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon notes-icon">
+                    📚
+                </div>
+
+                <div>
+
+                    <strong>
+                        Ask from My Notes
+                    </strong>
+
+                    <span>
+                        Study from uploaded material
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="flashcards"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon flashcards-icon">
+                    🃏
+                </div>
+
+                <div>
+
+                    <strong>
+                        Flashcards
+                    </strong>
+
+                    <span>
+                        Revise important concepts
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+
+        <label class="mode-card studyplan-mode-card">
+
+            <input
+                type="radio"
+                name="mode-select"
+                value="studyplan"
+            >
+
+            <div class="mode-content">
+
+                <div class="mode-icon studyplan-icon">
+                    📅
+                </div>
+
+                <div>
+
+                    <strong>
+                        Study Plan
+                    </strong>
+
+                    <span>
+                        Create a personalized plan
+                    </span>
+
+                </div>
+
+            </div>
+
+        </label>
+
+
+    </div>
 
 
 
     <!-- ================================= -->
-    <!-- STUDY MODES -->
+    <!-- UPLOAD -->
     <!-- ================================= -->
 
-    <section class="section-card">
+    <div class="upload-box">
 
-        <div class="section-title">
+        <div class="upload-icon">
+            📂
+        </div>
+
+        <div class="upload-content">
+
+            <h3>
+                Upload Study Material
+            </h3>
+
+            <p>
+                Upload your PDF or DOCX notes and
+                use them for questions, quizzes,
+                flashcards and study plans.
+            </p>
+
+            <p class="upload-limit">
+                Maximum file size: 10 MB
+            </p>
+
+
+            <form
+                method="POST"
+                action="/upload"
+                enctype="multipart/form-data"
+                class="upload-form"
+            >
+
+                <input
+                    type="file"
+                    name="file"
+                    accept=".pdf,.docx"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="upload-button"
+                >
+                    📤 Upload Notes
+                </button>
+
+            </form>
+
+
+            {% if filename %}
+
+            <div class="uploaded-file">
+
+                ✅ Uploaded:
+                <strong>
+                    {{ filename }}
+                </strong>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- NORMAL QUESTION -->
+    <!-- ================================= -->
+
+    <div
+        id="normal-question"
+        class="question-section"
+    >
+
+        <div class="section-title small-title">
 
             <div class="section-number">
-                01
+                02
             </div>
 
             <div>
 
                 <h3>
-                    Choose Study Mode
+                    Ask Your Question
                 </h3>
 
-                <p>
-                    Select how you want the AI to help you.
+                <p id="question-help">
+                    Ask anything you want to learn.
                 </p>
 
             </div>
@@ -134,385 +443,311 @@
         <form
             method="POST"
             action="/ask"
-            id="question-form"
         >
 
-
-            <div class="mode-grid">
-
-
-                <!-- EXPLAIN -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="explain"
-                        checked
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon explain-icon">
-                            💡
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Explain
-                            </strong>
-
-                            <span>
-                                Understand topics easily
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- SUMMARIZE -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="summarize"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon summarize-icon">
-                            📝
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Summarize
-                            </strong>
-
-                            <span>
-                                Get important points
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- QUIZ -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="quiz"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon quiz-icon">
-                            🧠
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Quiz Me
-                            </strong>
-
-                            <span>
-                                Test your knowledge
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- DOUBT -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="doubt"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon doubt-icon">
-                            ❓
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Ask a Doubt
-                            </strong>
-
-                            <span>
-                                Clear your confusion
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- NOTES -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="notes"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon notes-icon">
-                            📚
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Ask from My Notes
-                            </strong>
-
-                            <span>
-                                Study from uploaded material
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- FLASHCARDS -->
-
-                <label class="mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="flashcards"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon flashcards-icon">
-                            🃏
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Flashcards
-                            </strong>
-
-                            <span>
-                                Revise important concepts
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
-
-
-                <!-- STUDY PLAN -->
-
-                <label class="mode-card studyplan-mode-card">
-
-                    <input
-                        type="radio"
-                        name="mode"
-                        value="studyplan"
-                    >
-
-                    <div class="mode-content">
-
-                        <div class="mode-icon studyplan-icon">
-                            📅
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Study Plan
-                            </strong>
-
-                            <span>
-                                Create a personalized plan
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                </label>
-
+            <input
+                type="hidden"
+                name="mode"
+                id="selected-mode"
+                value="explain"
+            >
+
+
+            <textarea
+                name="question"
+                id="question"
+                placeholder="Example: Explain normalization in DBMS with a simple example."
+                required
+            ></textarea>
+
+
+            <div class="question-footer">
+
+                <span>
+                    💬 AI will answer in a student-friendly way
+                </span>
+
+                <button
+                    type="submit"
+                    class="ask-button"
+                >
+                    Ask AI 🚀
+                </button>
 
             </div>
-
-
-
-            <!-- ================================= -->
-            <!-- UPLOAD -->
-            <!-- ================================= -->
-
-            <div class="upload-box">
-
-                <div class="upload-icon">
-                    📂
-                </div>
-
-                <div class="upload-content">
-
-                    <h3>
-                        Upload Study Material
-                    </h3>
-
-                    <p>
-                        Upload your PDF or DOCX notes and
-                        ask questions directly from them.
-                    </p>
-
-                    <p class="upload-limit">
-                        Maximum file size: 10 MB
-                    </p>
-
-
-                    <form
-                        method="POST"
-                        action="/upload"
-                        enctype="multipart/form-data"
-                        class="upload-form"
-                    >
-
-                        <input
-                            type="file"
-                            name="file"
-                            accept=".pdf,.docx"
-                            required
-                        >
-
-                        <button
-                            type="submit"
-                            class="upload-button"
-                        >
-                            📤 Upload Notes
-                        </button>
-
-                    </form>
-
-
-                    {% if filename %}
-
-                    <div class="uploaded-file">
-
-                        ✅ Uploaded:
-                        <strong>
-                            {{ filename }}
-                        </strong>
-
-                    </div>
-
-                    {% endif %}
-
-                </div>
-
-            </div>
-
-
-
-            <!-- ================================= -->
-            <!-- QUESTION -->
-            <!-- ================================= -->
-
-            <div class="question-section">
-
-                <div class="section-title small-title">
-
-                    <div class="section-number">
-                        02
-                    </div>
-
-                    <div>
-
-                        <h3>
-                            Ask Your Question
-                        </h3>
-
-                        <p id="question-help">
-                            Ask anything you want to learn.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <textarea
-                    name="question"
-                    id="question"
-                    placeholder="Example: Explain normalization in DBMS with a simple example."
-                    required
-                ></textarea>
-
-
-                <div class="question-footer">
-
-                    <span>
-                        💬 AI will answer in a student-friendly way
-                    </span>
-
-                    <button
-                        type="submit"
-                        class="ask-button"
-                    >
-                        Ask AI 🚀
-                    </button>
-
-                </div>
-
-            </div>
-
 
         </form>
 
-    </section>
+    </div>
 
 
 
     <!-- ================================= -->
-    <!-- AI RESPONSE -->
+    <!-- QUIZ GENERATOR -->
+    <!-- ================================= -->
+
+    <div
+        id="quiz-generator"
+        class="quiz-generator"
+        style="display:none;"
+    >
+
+        <div class="section-title">
+
+            <div class="section-number">
+                02
+            </div>
+
+            <div>
+
+                <h3>
+                    🧠 Interactive Quiz
+                </h3>
+
+                <p>
+                    Choose a topic and test your knowledge.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form
+            method="POST"
+            action="/generate_quiz"
+        >
+
+            <input
+                type="text"
+                name="quiz_topic"
+                id="quiz-topic"
+                placeholder="Example: SQL DML Commands"
+                required
+            >
+
+
+            <p class="quiz-note">
+
+                📚 If you uploaded notes, the quiz will
+                mainly use your notes.
+
+            </p>
+
+
+            <button
+                type="submit"
+                class="ask-button"
+            >
+                Generate Quiz 🧠
+            </button>
+
+        </form>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- QUIZ -->
+    <!-- ================================= -->
+
+    {% if quiz %}
+
+    <section class="quiz-section">
+
+        <div class="quiz-header">
+
+            <div>
+
+                <span class="quiz-label">
+                    🧠 Interactive Quiz
+                </span>
+
+                <h2>
+                    {{ quiz.title }}
+                </h2>
+
+            </div>
+
+            {% if quiz.submitted %}
+
+            <div class="score-box">
+
+                <strong>
+                    {{ quiz.score }}/5
+                </strong>
+
+                <span>
+                    Score
+                </span>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if not quiz.submitted %}
+
+        <form
+            method="POST"
+            action="/submit_quiz"
+        >
+
+
+            {% for question in quiz.questions %}
+
+            <div class="quiz-question">
+
+                <h3>
+                    Question {{ loop.index }}
+                </h3>
+
+                <p class="quiz-question-text">
+                    {{ question.question }}
+                </p>
+
+
+                <div class="quiz-options">
+
+                    {% for option in question.options %}
+
+                    <label class="quiz-option">
+
+                        <input
+                            type="radio"
+                            name="question_{{ loop.parent.index0 }}"
+                            value="{{ loop.index0 }}"
+                            required
+                        >
+
+                        <span class="option-letter">
+                            {{ ["A", "B", "C", "D"][loop.index0] }}
+                        </span>
+
+                        <span>
+                            {{ option }}
+                        </span>
+
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+
+            <button
+                type="submit"
+                class="submit-quiz-button"
+            >
+                Submit Quiz ✅
+            </button>
+
+        </form>
+
+
+        {% else %}
+
+
+        <!-- RESULTS -->
+
+        <div class="quiz-result-message">
+
+            {% if quiz.score == 5 %}
+
+                🎉 Excellent! You got all 5 correct.
+
+            {% elif quiz.score >= 3 %}
+
+                👍 Good job! Keep revising the remaining topics.
+
+            {% else %}
+
+                📚 Keep practicing. Review the explanations below.
+
+            {% endif %}
+
+        </div>
+
+
+        {% for result in quiz.results %}
+
+        <div class="quiz-result-card">
+
+            <h3>
+                Question {{ loop.index }}
+            </h3>
+
+            <p class="quiz-question-text">
+                {{ result.question }}
+            </p>
+
+
+            {% if result.is_correct %}
+
+            <div class="correct-answer">
+                ✅ Correct
+            </div>
+
+            {% else %}
+
+            <div class="wrong-answer">
+                ❌ Incorrect
+            </div>
+
+            {% endif %}
+
+
+            <p class="answer-info">
+
+                <strong>
+                    Correct Answer:
+                </strong>
+
+                {{ ["A", "B", "C", "D"][result.correct] }}
+
+            </p>
+
+
+            <p class="explanation">
+
+                <strong>
+                    Explanation:
+                </strong>
+
+                {{ result.explanation }}
+
+            </p>
+
+        </div>
+
+        {% endfor %}
+
+
+        <a
+            href="/clear"
+            class="clear-button"
+        >
+            🔄 Start New Quiz
+        </a>
+
+
+        {% endif %}
+
+    </section>
+
+    {% endif %}
+
+
+
+    <!-- ================================= -->
+    <!-- CONVERSATION -->
     <!-- ================================= -->
 
     {% if conversation %}
@@ -544,36 +779,36 @@
 
             {% for message in conversation %}
 
-                {% if message.role == "user" %}
+            {% if message.role == "user" %}
 
-                <div class="message user-message">
+            <div class="message user-message">
 
-                    <div class="message-label">
-                        👤 You
-                    </div>
-
-                    <div class="message-content">
-                        {{ message.content }}
-                    </div>
-
+                <div class="message-label">
+                    👤 You
                 </div>
 
-                {% else %}
-
-                <div class="message ai-message">
-
-                    <div class="message-label">
-                        🤖 AI Study Assistant
-                    </div>
-
-                    <div
-                        class="message-content markdown-content"
-                        data-markdown="{{ message.content | e }}"
-                    ></div>
-
+                <div class="message-content">
+                    {{ message.content }}
                 </div>
 
-                {% endif %}
+            </div>
+
+            {% else %}
+
+            <div class="message ai-message">
+
+                <div class="message-label">
+                    🤖 AI Study Assistant
+                </div>
+
+                <div
+                    class="message-content markdown-content"
+                    data-markdown="{{ message.content | e }}"
+                ></div>
+
+            </div>
+
+            {% endif %}
 
             {% endfor %}
 
@@ -597,10 +832,6 @@
 
 
 
-    <!-- ================================= -->
-    <!-- NOTES STATUS -->
-    <!-- ================================= -->
-
     {% if notes %}
 
     <section class="notes-status">
@@ -617,8 +848,8 @@
 
             <p>
                 Your uploaded notes are available
-                for Ask from My Notes, Flashcards
-                and Study Plan.
+                for notes, quizzes, flashcards
+                and study plans.
             </p>
 
         </div>
@@ -628,13 +859,12 @@
     {% endif %}
 
 
+</section>
+
+
 </main>
 
 
-
-<!-- ===================================== -->
-<!-- FOOTER -->
-<!-- ===================================== -->
 
 <footer>
 
@@ -650,21 +880,20 @@
 
 
 
-<!-- ===================================== -->
-<!-- JAVASCRIPT -->
-<!-- ===================================== -->
-
 <script>
+
 
 const modeButtons =
     document.querySelectorAll(
-        'input[name="mode"]'
+        'input[name="mode-select"]'
     );
+
 
 const questionBox =
     document.getElementById(
         "question"
     );
+
 
 const questionHelp =
     document.getElementById(
@@ -672,11 +901,55 @@ const questionHelp =
     );
 
 
+const selectedMode =
+    document.getElementById(
+        "selected-mode"
+    );
+
+
+const normalQuestion =
+    document.getElementById(
+        "normal-question"
+    );
+
+
+const quizGenerator =
+    document.getElementById(
+        "quiz-generator"
+    );
+
+
+
 modeButtons.forEach(function(button) {
 
     button.addEventListener(
         "change",
         function() {
+
+
+            selectedMode.value =
+                this.value;
+
+
+            if (this.value === "quiz") {
+
+                normalQuestion.style.display =
+                    "none";
+
+                quizGenerator.style.display =
+                    "block";
+
+            }
+
+            else {
+
+                normalQuestion.style.display =
+                    "block";
+
+                quizGenerator.style.display =
+                    "none";
+
+            }
 
 
             if (this.value === "explain") {
@@ -696,18 +969,7 @@ modeButtons.forEach(function(button) {
                     "Example: Summarize the important points of DBMS.";
 
                 questionHelp.textContent =
-                    "Get a short and useful revision summary.";
-
-            }
-
-
-            else if (this.value === "quiz") {
-
-                questionBox.placeholder =
-                    "Example: Quiz me on SQL commands.";
-
-                questionHelp.textContent =
-                    "Test your knowledge with an AI-generated quiz.";
+                    "Get a short revision summary.";
 
             }
 
@@ -740,7 +1002,7 @@ modeButtons.forEach(function(button) {
                     "Example: Create flashcards from my uploaded notes.";
 
                 questionHelp.textContent =
-                    "Create quick revision flashcards from your study material.";
+                    "Create quick revision flashcards.";
 
             }
 
@@ -751,7 +1013,7 @@ modeButtons.forEach(function(button) {
                     "Example: Create a 7-day study plan for DBMS. I can study 2 hours per day.";
 
                 questionHelp.textContent =
-                    "Create a personalized study plan based on your goals and available time.";
+                    "Create a personalized study plan.";
 
             }
 
@@ -763,7 +1025,7 @@ modeButtons.forEach(function(button) {
 
 
 /* =====================================
-   MARKDOWN RENDERING
+   MARKDOWN
 ===================================== */
 
 const markdownElements =
@@ -792,6 +1054,7 @@ markdownElements.forEach(
 
     }
 );
+
 
 </script>
 
