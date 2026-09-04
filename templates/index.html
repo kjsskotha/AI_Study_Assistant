@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>AI Study Assistant</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>AI Study Assistant</h1>
+
+        <p class="subtitle">
+            Ask questions and learn with AI
+        </p>
+
+        <form action="/ask" method="POST">
+
+            <textarea
+                name="question"
+                placeholder="Enter your study question..."
+                required
+            ></textarea>
+
+            <button type="submit">
+                Ask AI
+            </button>
+
+        </form>
+
+        {% if answer %}
+
+        <div class="answer">
+
+            <h2>AI Response</h2>
+
+            <p><strong>Your question:</strong></p>
+
+            <p>{{ question }}</p>
+
+            <hr>
+
+            <p>{{ answer }}</p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+</html>
