@@ -2,20 +2,28 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>AI Study Assistant</title>
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
 
+    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Security -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
 </head>
 
 
 <body>
+
 
 <div class="background-shape shape-one"></div>
 <div class="background-shape shape-two"></div>
@@ -24,7 +32,7 @@
 <div class="app-container">
 
 
-    <!-- HEADER -->
+    <!-- ================= HEADER ================= -->
 
     <header class="header">
 
@@ -35,14 +43,19 @@
             </div>
 
             <div>
-                <h1>AI Study Assistant</h1>
+
+                <h1>
+                    AI Study Assistant
+                </h1>
 
                 <p>
                     Your personal AI learning companion
                 </p>
+
             </div>
 
         </div>
+
 
         <div class="ai-badge">
             ✨ AI Powered
@@ -52,7 +65,7 @@
 
 
 
-    <!-- HERO -->
+    <!-- ================= HERO ================= -->
 
     <section class="hero">
 
@@ -60,21 +73,24 @@
             🧠
         </div>
 
+
         <h2>
             Learn Smarter.<br>
             <span>Study Better.</span>
         </h2>
 
+
         <p>
             Ask questions, understand difficult concepts,
-            summarize topics and test your knowledge with AI.
+            summarize topics, create quizzes and flashcards
+            with AI.
         </p>
 
     </section>
 
 
 
-    <!-- STUDY MODES -->
+    <!-- ================= STUDY MODES ================= -->
 
     <section class="study-section">
 
@@ -223,7 +239,7 @@
 
 
 
-            <!-- MY NOTES -->
+            <!-- ASK FROM NOTES -->
 
             <label class="mode-card notes-mode-card">
 
@@ -246,7 +262,41 @@
                         </strong>
 
                         <span>
-                            Ask questions from uploaded notes
+                            Ask questions from notes
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </label>
+
+
+
+            <!-- FLASHCARDS -->
+
+            <label class="mode-card flashcard-mode-card">
+
+                <input
+                    type="radio"
+                    name="mode-select"
+                    value="flashcards"
+                >
+
+                <div class="mode-content">
+
+                    <div class="mode-icon flashcard-icon">
+                        🃏
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Flashcards
+                        </strong>
+
+                        <span>
+                            Revise important concepts
                         </span>
 
                     </div>
@@ -262,15 +312,17 @@
 
 
 
-    <!-- UPLOAD STUDY MATERIAL -->
+    <!-- ================= UPLOAD NOTES ================= -->
 
     <section class="upload-section">
+
 
         <div class="upload-title">
 
             <div class="upload-icon">
                 📚
             </div>
+
 
             <div>
 
@@ -279,12 +331,14 @@
                 </h3>
 
                 <p>
-                    Upload your PDF or DOCX notes and ask questions about them
+                    Upload your PDF or DOCX notes
+                    and study with AI
                 </p>
 
             </div>
 
         </div>
+
 
 
         <form
@@ -293,6 +347,7 @@
             enctype="multipart/form-data"
             class="upload-form"
         >
+
 
             <div class="file-area">
 
@@ -304,15 +359,18 @@
                     required
                 >
 
+
                 <label for="study_file">
 
                     <span class="file-icon">
                         📄
                     </span>
 
+
                     <strong>
                         Choose PDF or DOCX
                     </strong>
+
 
                     <span>
                         Maximum file size: 10 MB
@@ -323,14 +381,19 @@
             </div>
 
 
+
             <button
                 type="submit"
                 class="upload-button"
             >
+
                 📤 Upload Notes
+
             </button>
 
+
         </form>
+
 
 
         {% if uploaded_file %}
@@ -341,11 +404,13 @@
                 ✅
             </span>
 
+
             <div>
 
                 <strong>
                     Study material loaded
                 </strong>
+
 
                 <p>
                     {{ uploaded_file }}
@@ -357,11 +422,12 @@
 
         {% endif %}
 
+
     </section>
 
 
 
-    <!-- QUESTION SECTION -->
+    <!-- ================= QUESTION ================= -->
 
     <section class="question-section">
 
@@ -381,17 +447,21 @@
             >
 
 
+
             <div class="question-title">
+
 
                 <div class="title-icon">
                     ✨
                 </div>
+
 
                 <div>
 
                     <h3>
                         What do you want to learn today?
                     </h3>
+
 
                     <p id="question-help">
                         Enter a topic, question or doubt below
@@ -453,7 +523,7 @@
 
 
 
-    <!-- AI RESPONSE -->
+    <!-- ================= AI RESPONSE ================= -->
 
     {% if answer %}
 
@@ -462,11 +532,14 @@
 
         <div class="response-header">
 
+
             <div class="response-title">
+
 
                 <div class="ai-response-icon">
                     🤖
                 </div>
+
 
                 <div>
 
@@ -474,11 +547,13 @@
                         AI Response
                     </h3>
 
+
                     <span>
                         Generated by your AI Study Assistant
                     </span>
 
                 </div>
+
 
             </div>
 
@@ -486,6 +561,7 @@
             <div class="response-status">
                 ● Ready
             </div>
+
 
         </div>
 
@@ -498,6 +574,7 @@
             <span>
                 Your question
             </span>
+
 
             <p>
                 {{ question }}
@@ -515,6 +592,7 @@
         ></div>
 
 
+
         <script
             id="answer-data"
             type="text/plain"
@@ -524,16 +602,25 @@
     </section>
 
 
+
     <script>
 
         const rawAnswer =
-            document.getElementById("answer-data").textContent;
+            document.getElementById(
+                "answer-data"
+            ).textContent;
+
 
         const formattedAnswer =
             marked.parse(rawAnswer);
 
-        document.getElementById("ai-answer").innerHTML =
-            DOMPurify.sanitize(formattedAnswer);
+
+        document.getElementById(
+            "ai-answer"
+        ).innerHTML =
+            DOMPurify.sanitize(
+                formattedAnswer
+            );
 
     </script>
 
@@ -541,13 +628,14 @@
 
 
 
-    <!-- FOOTER -->
+    <!-- ================= FOOTER ================= -->
 
     <footer>
 
         <p>
             🎓 AI Study Assistant
         </p>
+
 
         <span>
             Learn • Practice • Improve
@@ -560,121 +648,166 @@
 
 
 
-<!-- JAVASCRIPT -->
+<!-- ================= JAVASCRIPT ================= -->
 
 <script>
 
-    const modeCards =
-        document.querySelectorAll(
-            'input[name="mode-select"]'
-        );
+
+const modeCards =
+    document.querySelectorAll(
+        'input[name="mode-select"]'
+    );
 
 
-    const selectedMode =
-        document.getElementById(
-            "selected-mode"
-        );
+const selectedMode =
+    document.getElementById(
+        "selected-mode"
+    );
 
 
-    const questionBox =
-        document.getElementById(
-            "question"
-        );
+const questionBox =
+    document.getElementById(
+        "question"
+    );
 
 
-    const questionHelp =
-        document.getElementById(
-            "question-help"
-        );
-
-
-    modeCards.forEach(function(card) {
-
-        card.addEventListener(
-            "change",
-            function() {
-
-                selectedMode.value =
-                    this.value;
-
-
-                if (this.value === "notes") {
-
-                    questionBox.placeholder =
-                        "Example: What are the important points in my notes?";
-
-                    questionHelp.textContent =
-                        "Ask a question based on your uploaded study material.";
-
-                }
-
-                else if (this.value === "quiz") {
-
-                    questionBox.placeholder =
-                        "Example: Create a quiz about this topic...";
-
-                    questionHelp.textContent =
-                        "Enter a topic to test your knowledge.";
-
-                }
-
-                else if (this.value === "summarize") {
-
-                    questionBox.placeholder =
-                        "Example: Summarize this topic in simple points...";
-
-                    questionHelp.textContent =
-                        "Get the most important points for revision.";
-
-                }
-
-                else if (this.value === "doubt") {
-
-                    questionBox.placeholder =
-                        "Example: Why does this concept work this way?";
-
-                    questionHelp.textContent =
-                        "Ask anything you are confused about.";
-
-                }
-
-                else {
-
-                    questionBox.placeholder =
-                        "Example: Explain Newton's laws of motion in simple words...";
-
-                    questionHelp.textContent =
-                        "Enter a topic, question or doubt below.";
-
-                }
-
-            }
-        );
-
-    });
+const questionHelp =
+    document.getElementById(
+        "question-help"
+    );
 
 
 
-    {% if selected_mode %}
-
-    const currentMode =
-        "{{ selected_mode }}";
+modeCards.forEach(function(card) {
 
 
-    modeCards.forEach(function(card) {
+    card.addEventListener(
+        "change",
+        function() {
 
-        if (card.value === currentMode) {
-
-            card.checked = true;
 
             selectedMode.value =
-                currentMode;
+                this.value;
+
+
+
+            if (this.value === "notes") {
+
+
+                questionBox.placeholder =
+                    "Example: What are the important points in my notes?";
+
+
+                questionHelp.textContent =
+                    "Ask a question based on your uploaded study material.";
+
+            }
+
+
+
+            else if (this.value === "flashcards") {
+
+
+                questionBox.placeholder =
+                    "Example: Create flashcards from my notes";
+
+
+                questionHelp.textContent =
+                    "Create flashcards from your uploaded study material.";
+
+            }
+
+
+
+            else if (this.value === "quiz") {
+
+
+                questionBox.placeholder =
+                    "Example: Create a quiz about this topic";
+
+
+                questionHelp.textContent =
+                    "Enter a topic to test your knowledge.";
+
+            }
+
+
+
+            else if (this.value === "summarize") {
+
+
+                questionBox.placeholder =
+                    "Example: Summarize this topic in simple points";
+
+
+                questionHelp.textContent =
+                    "Get the most important points for revision.";
+
+            }
+
+
+
+            else if (this.value === "doubt") {
+
+
+                questionBox.placeholder =
+                    "Example: Why does this concept work this way?";
+
+
+                questionHelp.textContent =
+                    "Ask anything you are confused about.";
+
+            }
+
+
+
+            else {
+
+
+                questionBox.placeholder =
+                    "Example: Explain Newton's laws of motion in simple words...";
+
+
+                questionHelp.textContent =
+                    "Enter a topic, question or doubt below.";
+
+            }
 
         }
+    );
 
-    });
+});
 
-    {% endif %}
+
+
+{% if selected_mode %}
+
+
+const currentMode =
+    "{{ selected_mode }}";
+
+
+modeCards.forEach(function(card) {
+
+
+    if (
+        card.value === currentMode
+    ) {
+
+
+        card.checked = true;
+
+
+        selectedMode.value =
+            currentMode;
+
+    }
+
+});
+
+
+{% endif %}
+
 
 </script>
 
