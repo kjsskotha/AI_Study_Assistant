@@ -26,7 +26,6 @@
 
 <body>
 
-
 <header class="header">
 
     <div class="header-inner">
@@ -88,6 +87,11 @@
 
 <section class="section-card">
 
+
+    <!-- ================================= -->
+    <!-- STUDY MODES -->
+    <!-- ================================= -->
+
     <div class="section-title">
 
         <div class="section-number">
@@ -111,6 +115,8 @@
 
     <div class="mode-grid">
 
+
+        <!-- EXPLAIN -->
 
         <label class="mode-card">
 
@@ -145,6 +151,8 @@
 
 
 
+        <!-- SUMMARIZE -->
+
         <label class="mode-card">
 
             <input
@@ -176,6 +184,8 @@
         </label>
 
 
+
+        <!-- QUIZ -->
 
         <label class="mode-card">
 
@@ -209,6 +219,8 @@
 
 
 
+        <!-- DOUBT -->
+
         <label class="mode-card">
 
             <input
@@ -240,6 +252,8 @@
         </label>
 
 
+
+        <!-- NOTES -->
 
         <label class="mode-card">
 
@@ -273,6 +287,8 @@
 
 
 
+        <!-- FLASHCARDS -->
+
         <label class="mode-card">
 
             <input
@@ -305,7 +321,9 @@
 
 
 
-        <label class="mode-card studyplan-mode-card">
+        <!-- STUDY PLAN -->
+
+        <label class="mode-card">
 
             <input
                 type="radio"
@@ -341,7 +359,7 @@
 
 
     <!-- ================================= -->
-    <!-- UPLOAD -->
+    <!-- UPLOAD STUDY MATERIAL -->
     <!-- ================================= -->
 
     <div class="upload-box">
@@ -396,6 +414,7 @@
             <div class="uploaded-file">
 
                 ✅ Uploaded:
+
                 <strong>
                     {{ filename }}
                 </strong>
@@ -411,7 +430,7 @@
 
 
     <!-- ================================= -->
-    <!-- NORMAL QUESTION -->
+    <!-- NORMAL QUESTION SECTION -->
     <!-- ================================= -->
 
     <div
@@ -549,12 +568,15 @@
 
 
     <!-- ================================= -->
-    <!-- QUIZ -->
+    <!-- INTERACTIVE QUIZ -->
     <!-- ================================= -->
 
     {% if quiz %}
 
     <section class="quiz-section">
+
+
+        <!-- QUIZ HEADER -->
 
         <div class="quiz-header">
 
@@ -569,6 +591,7 @@
                 </h2>
 
             </div>
+
 
             {% if quiz.submitted %}
 
@@ -589,6 +612,11 @@
         </div>
 
 
+
+        <!-- ================================= -->
+        <!-- QUESTIONS -->
+        <!-- ================================= -->
+
         {% if not quiz.submitted %}
 
         <form
@@ -599,11 +627,15 @@
 
             {% for question in quiz.questions %}
 
+            {% set question_number = loop.index0 %}
+
+
             <div class="quiz-question">
 
                 <h3>
                     Question {{ loop.index }}
                 </h3>
+
 
                 <p class="quiz-question-text">
                     {{ question.question }}
@@ -612,34 +644,43 @@
 
                 <div class="quiz-options">
 
+
                     {% for option in question.options %}
 
                     <label class="quiz-option">
 
+
                         <input
                             type="radio"
-                            name="question_{{ loop.parent.index0 }}"
+                            name="question_{{ question_number }}"
                             value="{{ loop.index0 }}"
                             required
                         >
 
+
                         <span class="option-letter">
+
                             {{ ["A", "B", "C", "D"][loop.index0] }}
+
                         </span>
+
 
                         <span>
                             {{ option }}
                         </span>
 
+
                     </label>
 
                     {% endfor %}
+
 
                 </div>
 
             </div>
 
             {% endfor %}
+
 
 
             <button
@@ -649,59 +690,94 @@
                 Submit Quiz ✅
             </button>
 
+
         </form>
 
+
+        <!-- ================================= -->
+        <!-- QUIZ RESULTS -->
+        <!-- ================================= -->
 
         {% else %}
 
 
-        <!-- RESULTS -->
-
         <div class="quiz-result-message">
+
 
             {% if quiz.score == 5 %}
 
                 🎉 Excellent! You got all 5 correct.
 
+
             {% elif quiz.score >= 3 %}
 
                 👍 Good job! Keep revising the remaining topics.
+
 
             {% else %}
 
                 📚 Keep practicing. Review the explanations below.
 
+
             {% endif %}
+
 
         </div>
 
 
+
         {% for result in quiz.results %}
 
+
         <div class="quiz-result-card">
+
 
             <h3>
                 Question {{ loop.index }}
             </h3>
+
 
             <p class="quiz-question-text">
                 {{ result.question }}
             </p>
 
 
+
             {% if result.is_correct %}
 
             <div class="correct-answer">
+
                 ✅ Correct
+
             </div>
+
 
             {% else %}
 
             <div class="wrong-answer">
+
                 ❌ Incorrect
+
             </div>
 
             {% endif %}
+
+
+
+            {% if result.selected is not none %}
+
+            <p class="answer-info">
+
+                <strong>
+                    Your Answer:
+                </strong>
+
+                {{ ["A", "B", "C", "D"][result.selected] }}
+
+            </p>
+
+            {% endif %}
+
 
 
             <p class="answer-info">
@@ -715,6 +791,7 @@
             </p>
 
 
+
             <p class="explanation">
 
                 <strong>
@@ -725,9 +802,12 @@
 
             </p>
 
+
         </div>
 
+
         {% endfor %}
+
 
 
         <a
@@ -740,6 +820,7 @@
 
         {% endif %}
 
+
     </section>
 
     {% endif %}
@@ -747,12 +828,13 @@
 
 
     <!-- ================================= -->
-    <!-- CONVERSATION -->
+    <!-- AI CONVERSATION -->
     <!-- ================================= -->
 
     {% if conversation %}
 
     <section class="section-card response-section">
+
 
         <div class="section-title">
 
@@ -775,11 +857,15 @@
         </div>
 
 
+
         <div class="conversation">
+
 
             {% for message in conversation %}
 
+
             {% if message.role == "user" %}
+
 
             <div class="message user-message">
 
@@ -793,7 +879,9 @@
 
             </div>
 
+
             {% else %}
+
 
             <div class="message ai-message">
 
@@ -808,11 +896,15 @@
 
             </div>
 
+
             {% endif %}
+
 
             {% endfor %}
 
+
         </div>
+
 
 
         <div class="response-actions">
@@ -826,11 +918,16 @@
 
         </div>
 
+
     </section>
 
     {% endif %}
 
 
+
+    <!-- ================================= -->
+    <!-- NOTES STATUS -->
+    <!-- ================================= -->
 
     {% if notes %}
 
@@ -866,6 +963,10 @@
 
 
 
+<!-- ================================= -->
+<!-- FOOTER -->
+<!-- ================================= -->
+
 <footer>
 
     <p>
@@ -881,6 +982,11 @@
 
 
 <script>
+
+
+/* =====================================
+   MODE SELECTION
+===================================== */
 
 
 const modeButtons =
@@ -922,6 +1028,7 @@ const quizGenerator =
 
 modeButtons.forEach(function(button) {
 
+
     button.addEventListener(
         "change",
         function() {
@@ -931,102 +1038,153 @@ modeButtons.forEach(function(button) {
                 this.value;
 
 
+
+            /* QUIZ MODE */
+
             if (this.value === "quiz") {
+
 
                 normalQuestion.style.display =
                     "none";
 
+
                 quizGenerator.style.display =
                     "block";
 
+
             }
+
+
+            /* OTHER MODES */
 
             else {
 
+
                 normalQuestion.style.display =
                     "block";
+
 
                 quizGenerator.style.display =
                     "none";
 
+
             }
 
 
+
+            /* EXPLAIN */
+
             if (this.value === "explain") {
+
 
                 questionBox.placeholder =
                     "Example: Explain normalization in DBMS with a simple example.";
 
+
                 questionHelp.textContent =
                     "Get a simple step-by-step explanation.";
+
 
             }
 
 
+
+            /* SUMMARIZE */
+
             else if (this.value === "summarize") {
+
 
                 questionBox.placeholder =
                     "Example: Summarize the important points of DBMS.";
 
+
                 questionHelp.textContent =
                     "Get a short revision summary.";
+
 
             }
 
 
+
+            /* DOUBT */
+
             else if (this.value === "doubt") {
+
 
                 questionBox.placeholder =
                     "Example: I don't understand the difference between primary key and foreign key.";
 
+
                 questionHelp.textContent =
                     "Explain your confusion and AI will help you.";
+
 
             }
 
 
+
+            /* NOTES */
+
             else if (this.value === "notes") {
+
 
                 questionBox.placeholder =
                     "Example: Generate important exam questions from my notes.";
 
+
                 questionHelp.textContent =
                     "The AI will use your uploaded notes as the main source.";
+
 
             }
 
 
+
+            /* FLASHCARDS */
+
             else if (this.value === "flashcards") {
+
 
                 questionBox.placeholder =
                     "Example: Create flashcards from my uploaded notes.";
 
+
                 questionHelp.textContent =
                     "Create quick revision flashcards.";
+
 
             }
 
 
+
+            /* STUDY PLAN */
+
             else if (this.value === "studyplan") {
+
 
                 questionBox.placeholder =
                     "Example: Create a 7-day study plan for DBMS. I can study 2 hours per day.";
 
+
                 questionHelp.textContent =
                     "Create a personalized study plan.";
 
+
             }
+
 
         }
     );
+
 
 });
 
 
 
 /* =====================================
-   MARKDOWN
+   MARKDOWN RENDERING
 ===================================== */
+
 
 const markdownElements =
     document.querySelectorAll(
@@ -1037,20 +1195,30 @@ const markdownElements =
 markdownElements.forEach(
     function(element) {
 
+
         const markdown =
             element.getAttribute(
                 "data-markdown"
             );
 
+
         if (markdown) {
 
+
             const html =
-                marked.parse(markdown);
+                marked.parse(
+                    markdown
+                );
+
 
             element.innerHTML =
-                DOMPurify.sanitize(html);
+                DOMPurify.sanitize(
+                    html
+                );
+
 
         }
+
 
     }
 );
