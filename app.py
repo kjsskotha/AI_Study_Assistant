@@ -1,33 +1,42 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from groq import Groq
+from werkzeug.utils import secure_filename
+from PyPDF2 import PdfReader
+from docx import Document
 import os
 import uuid
 import json
-import PyPDF2
-from docx import Document
+
 
 app = Flask(__name__)
 
+# Secret key
 app.secret_key = os.environ.get(
     "FLASK_SECRET_KEY",
     "change-this-secret-key"
 )
 
+# Upload settings
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
+ALLOWED_EXTENSIONS = {"pdf", "docx"}
+
+# Groq API
 api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
+MODEL_NAME = "openai/gpt-oss-20b"
+
+# Server-side storage folder
 DATA_FOLDER = "user_data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
-# =========================================
-# SESSION STORAGE
-# =========================================
+# --------------------------------------------------
+# SESSION / FILE HELPERS
+# --------------------------------------------------
 
 def get_session_id():
-
     if "session_id" not in session:
         session["session_id"] = str(uuid.uuid4())
 
@@ -35,191 +44,101 @@ def get_session_id():
 
 
 def get_user_folder():
-
-    folder = os.path.join(
-        DATA_FOLDER,
-        get_session_id()
-    )
-
+    folder = os.path.join(DATA_FOLDER, get_session_id())
     os.makedirs(folder, exist_ok=True)
-
     return folder
 
 
 def get_conversation_file():
-    return os.path.join(
-        get_user_folder(),
-        "conversation.txt"
-    )
+    return os.path.join(get_user_folder(), "conversation.txt")
 
 
 def get_notes_file():
-    return os.path.join(
-        get_user_folder(),
-        "notes.txt"
-    )
+    return os.path.join(get_user_folder(), "notes.txt")
 
 
 def get_filename_file():
-    return os.path.join(
-        get_user_folder(),
-        "filename.txt"
-    )
-
-
-def get_quiz_file():
-    return os.path.join(
-        get_user_folder(),
-        "quiz.json"
-    )
-
-
-# =========================================
-# FILE NAME
-# =========================================
-
-def save_uploaded_file_name(filename):
-
-    with open(
-        get_filename_file(),
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        file.write(filename)
+    return os.path.join(get_user_folder(), "filename.txt")
 
 
 def get_uploaded_file_name():
-
-    filename_file = get_filename_file()
-
-    if os.path.exists(filename_file):
-
-        with open(
-            filename_file,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            return file.read()
-
-    return ""
+    return os.path.join(get_user_folder(), "uploaded_file.txt")
 
 
-# =========================================
+def get_quiz_file():
+    return os.path.join(get_user_folder(), "quiz.json")
+
+
+def get_flashcards_file():
+    return os.path.join(get_user_folder(), "flashcards.json")
+
+
+# --------------------------------------------------
 # CONVERSATION
-# =========================================
+# --------------------------------------------------
 
 def save_conversation(conversation):
-
-    with open(
-        get_conversation_file(),
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        for message in conversation:
-
-            file.write(
-                message["role"] + "\n"
-            )
-
-            file.write(
-                message["content"] + "\n"
-            )
-
-            file.write(
-                "-----MESSAGE-END-----\n"
-            )
+    with open(get_conversation_file(), "w", encoding="utf-8") as file:
+        file.write(json.dumps(conversation, ensure_ascii=False))
 
 
 def load_conversation():
+    path = get_conversation_file()
 
-    filename = get_conversation_file()
-
-    if not os.path.exists(filename):
+    if not os.path.exists(path):
         return []
 
-    with open(
-        filename,
-        "r",
-        encoding="utf-8"
-    ) as file:
-
-        text = file.read()
-
-    if not text.strip():
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            return json.loads(file.read())
+    except:
         return []
 
-    blocks = text.split(
-        "-----MESSAGE-END-----"
-    )
 
-    conversation = []
-
-    for block in blocks:
-
-        block = block.strip()
-
-        if not block:
-            continue
-
-        lines = block.split("\n", 1)
-
-        if len(lines) != 2:
-            continue
-
-        conversation.append({
-            "role": lines[0].strip(),
-            "content": lines[1].strip()
-        })
-
-    return conversation
-
-
-# =========================================
+# --------------------------------------------------
 # NOTES
-# =========================================
+# --------------------------------------------------
 
-def save_notes(text):
-
-    with open(
-        get_notes_file(),
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        file.write(text)
+def save_notes(notes):
+    with open(get_notes_file(), "w", encoding="utf-8") as file:
+        file.write(notes)
 
 
 def load_notes():
+    path = get_notes_file()
 
-    filename = get_notes_file()
-
-    if not os.path.exists(filename):
+    if not os.path.exists(path):
         return ""
 
-    with open(
-        filename,
-        "r",
-        encoding="utf-8"
-    ) as file:
-
+    with open(path, "r", encoding="utf-8") as file:
         return file.read()
 
 
-# =========================================
-# QUIZ STORAGE
-# =========================================
+# --------------------------------------------------
+# FILE NAME
+# --------------------------------------------------
+
+def save_filename(filename):
+    with open(get_filename_file(), "w", encoding="utf-8") as file:
+        file.write(filename)
+
+
+def load_filename():
+    path = get_filename_file()
+
+    if not os.path.exists(path):
+        return ""
+
+    with open(path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
+# --------------------------------------------------
+# QUIZ
+# --------------------------------------------------
 
 def save_quiz(quiz):
-
-    with open(
-        get_quiz_file(),
-        "w",
-        encoding="utf-8"
-    ) as file:
-
+    with open(get_quiz_file(), "w", encoding="utf-8") as file:
         json.dump(
             quiz,
             file,
@@ -229,188 +148,464 @@ def save_quiz(quiz):
 
 
 def load_quiz():
+    path = get_quiz_file()
 
-    filename = get_quiz_file()
-
-    if not os.path.exists(filename):
+    if not os.path.exists(path):
         return None
 
     try:
-
-        with open(
-            filename,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
+        with open(path, "r", encoding="utf-8") as file:
             return json.load(file)
-
-    except Exception:
-
+    except:
         return None
 
 
-def delete_quiz():
+# --------------------------------------------------
+# FLASHCARDS
+# --------------------------------------------------
 
-    filename = get_quiz_file()
+def save_flashcards(flashcards):
+    with open(get_flashcards_file(), "w", encoding="utf-8") as file:
+        json.dump(
+            flashcards,
+            file,
+            ensure_ascii=False,
+            indent=2
+        )
 
-    if os.path.exists(filename):
 
-        os.remove(filename)
+def load_flashcards():
+    path = get_flashcards_file()
+
+    if not os.path.exists(path):
+        return None
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except:
+        return None
 
 
-# =========================================
-# PDF EXTRACTION
-# =========================================
+# --------------------------------------------------
+# FILE EXTRACTION
+# --------------------------------------------------
 
-def extract_pdf_text(file):
+def allowed_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower()
+        in ALLOWED_EXTENSIONS
+    )
 
+
+def extract_pdf_text(file_path):
     text = ""
 
-    reader = PyPDF2.PdfReader(file)
+    reader = PdfReader(file_path)
 
     for page in reader.pages:
-
         page_text = page.extract_text()
 
         if page_text:
-
-            text += page_text
-            text += "\n"
+            text += page_text + "\n"
 
     return text
 
 
-# =========================================
-# DOCX EXTRACTION
-# =========================================
-
-def extract_docx_text(file):
-
-    document = Document(file)
+def extract_docx_text(file_path):
+    document = Document(file_path)
 
     text = ""
 
     for paragraph in document.paragraphs:
-
-        if paragraph.text.strip():
-
-            text += paragraph.text
-            text += "\n"
+        text += paragraph.text + "\n"
 
     return text
 
 
-# =========================================
-# TEXT EXTRACTION
-# =========================================
-
-def extract_text(file, filename):
-
-    extension = filename.lower().split(".")[-1]
+def extract_text(file_path, filename):
+    extension = filename.rsplit(".", 1)[1].lower()
 
     if extension == "pdf":
-
-        return extract_pdf_text(file)
+        return extract_pdf_text(file_path)
 
     if extension == "docx":
-
-        return extract_docx_text(file)
+        return extract_docx_text(file_path)
 
     return ""
 
 
-# =========================================
-# HOME
-# =========================================
+# --------------------------------------------------
+# HOME PAGE
+# --------------------------------------------------
 
 @app.route("/")
 def home():
 
+    conversation = load_conversation()
+    notes = load_notes()
+    filename = load_filename()
+
+    quiz = load_quiz()
+    flashcards = load_flashcards()
+
     return render_template(
         "index.html",
-        conversation=load_conversation(),
-        notes=load_notes(),
-        filename=get_uploaded_file_name(),
-        quiz=load_quiz()
+        conversation=conversation,
+        notes=notes,
+        filename=filename,
+        quiz=quiz,
+        flashcards=flashcards
     )
 
 
-# =========================================
-# UPLOAD
-# =========================================
+# --------------------------------------------------
+# UPLOAD NOTES
+# --------------------------------------------------
 
 @app.route("/upload", methods=["POST"])
 def upload():
 
-    uploaded_file = request.files.get("file")
-
-    if not uploaded_file:
-
+    if "file" not in request.files:
         return redirect(url_for("home"))
 
-    filename = uploaded_file.filename
+    file = request.files["file"]
 
-    if not filename:
-
+    if file.filename == "":
         return redirect(url_for("home"))
 
-    extension = filename.lower().split(".")[-1]
-
-    if extension not in ["pdf", "docx"]:
-
+    if not allowed_file(file.filename):
         return redirect(url_for("home"))
+
+    filename = secure_filename(file.filename)
+
+    user_folder = get_user_folder()
+
+    file_path = os.path.join(
+        user_folder,
+        filename
+    )
+
+    file.save(file_path)
 
     try:
-
-        text = extract_text(
-            uploaded_file,
+        extracted_text = extract_text(
+            file_path,
             filename
         )
 
-        if not text.strip():
+        if not extracted_text.strip():
+            os.remove(file_path)
 
             return redirect(url_for("home"))
 
-        save_notes(text)
+        save_notes(extracted_text)
+        save_filename(filename)
 
-        safe_filename = os.path.basename(
-            filename
-        )
+        # New notes = remove old generated content
+        quiz_path = get_quiz_file()
 
-        file_path = os.path.join(
-            get_user_folder(),
-            safe_filename
-        )
+        if os.path.exists(quiz_path):
+            os.remove(quiz_path)
 
-        uploaded_file.seek(0)
+        flashcards_path = get_flashcards_file()
 
-        uploaded_file.save(file_path)
+        if os.path.exists(flashcards_path):
+            os.remove(flashcards_path)
 
-        save_uploaded_file_name(
-            safe_filename
-        )
-
+        # Start a fresh conversation
         save_conversation([])
 
-        delete_quiz()
+    except Exception as error:
 
-        return redirect(
-            url_for("home")
+        print("Upload error:", error)
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    return redirect(url_for("home"))
+
+
+# --------------------------------------------------
+# ASK AI
+# --------------------------------------------------
+
+@app.route("/ask", methods=["POST"])
+def ask():
+
+    question = request.form.get("question", "").strip()
+
+    study_mode = request.form.get(
+        "mode",
+        "explain"
+    )
+
+    if not question:
+        return redirect(url_for("home"))
+
+    # Quiz and flashcards use their own routes
+    if study_mode == "quiz":
+        return redirect(url_for("home"))
+
+    if study_mode == "flashcards":
+        return redirect(url_for("home"))
+
+    notes = load_notes()
+    conversation = load_conversation()
+
+    # --------------------------------------------------
+    # STUDY MODE INSTRUCTIONS
+    # --------------------------------------------------
+
+    if study_mode == "explain":
+
+        instruction = """
+You are an AI Study Assistant.
+
+Explain the student's question clearly and accurately.
+
+Reply in the same language as the student's question.
+
+Use simple, student-friendly language.
+
+Break difficult concepts into smaller parts.
+
+Use examples when helpful.
+
+If the uploaded notes are available, use them as supporting study material.
+"""
+
+    elif study_mode == "summarize":
+
+        instruction = """
+You are an AI Study Assistant.
+
+Summarize the student's topic clearly.
+
+Reply in the same language as the student's question.
+
+Focus on important points.
+
+Use headings and bullet points where useful.
+
+If uploaded notes are available, use them as the main source.
+"""
+
+    elif study_mode == "quizme":
+
+        instruction = """
+You are an AI Study Assistant.
+
+Create a short practice quiz for the student.
+
+Reply in the same language as the student's question.
+
+Ask clear questions based mainly on the uploaded notes if available.
+
+Do not immediately give all the answers.
+
+Wait for the student to answer and then evaluate their answers.
+"""
+
+    elif study_mode == "doubt":
+
+        instruction = """
+You are an AI Study Assistant.
+
+Help the student understand their doubt.
+
+Reply in the same language as the student's question.
+
+Explain the concept step by step.
+
+Correct misunderstandings politely.
+
+Keep the explanation student-friendly.
+"""
+
+    elif study_mode == "notes":
+
+        instruction = """
+You are an AI Study Assistant.
+
+Use the student's uploaded study material as the MAIN source.
+
+Reply in the same language as the student's question.
+
+Do not invent information that is not supported by the uploaded notes.
+
+Organize important exam questions into:
+
+1. Very Short Answer Questions
+2. Short Answer Questions
+3. Long Answer Questions
+
+Include answers only when the student asks for answers.
+
+If the student asks to generate important exam questions,
+create useful questions from the uploaded notes.
+"""
+
+    elif study_mode == "studyplan":
+
+        instruction = """
+Create a practical and realistic study plan for the student.
+
+Reply in the same language as the student's question.
+
+Understand the student's:
+
+- Subject or subjects
+- Number of days
+- Available study time
+- Exam or target date if provided
+- Uploaded study material if available
+
+If the student has uploaded notes,
+build the plan mainly around the topics in those notes.
+
+Organize the plan clearly.
+
+Use:
+
+1. Study Plan Overview
+2. Daily Schedule
+3. Topics to Study
+4. Practice / Questions
+5. Revision
+6. Final Review
+
+For each day, mention:
+
+- What to study
+- Approximate time
+- What to practice
+- What to revise
+
+Keep the plan realistic.
+
+Do not suggest studying continuously without breaks.
+
+Include reasonable short breaks.
+
+If the student has not provided enough information,
+make a sensible general study plan and clearly state
+the assumptions you made.
+"""
+
+    else:
+
+        instruction = """
+You are an AI Study Assistant.
+
+Help the student with their question.
+
+Reply in the same language as the student's question.
+
+Keep the answer clear and student-friendly.
+"""
+
+    # --------------------------------------------------
+    # NOTES CONTEXT
+    # --------------------------------------------------
+
+    notes_context = ""
+
+    if notes:
+
+        # Prevent extremely large prompts
+        limited_notes = notes[:50000]
+
+        notes_context = f"""
+
+UPLOADED STUDY MATERIAL:
+
+{limited_notes}
+
+END OF STUDY MATERIAL.
+"""
+
+    # --------------------------------------------------
+    # CONVERSATION CONTEXT
+    # --------------------------------------------------
+
+    messages = [
+        {
+            "role": "system",
+            "content": instruction
+        }
+    ]
+
+    if notes_context:
+        messages.append(
+            {
+                "role": "system",
+                "content": notes_context
+            }
         )
 
-    except Exception as e:
+    # Add previous conversation
+    for item in conversation[-20:]:
 
-        print("Upload error:", e)
-
-        return redirect(
-            url_for("home")
+        messages.append(
+            {
+                "role": item["role"],
+                "content": item["content"]
+            }
         )
 
+    # Add new question
+    messages.append(
+        {
+            "role": "user",
+            "content": question
+        }
+    )
 
-# =========================================
-# GENERATE QUIZ
-# =========================================
+    try:
+
+        response = client.chat.completions.create(
+
+            model=MODEL_NAME,
+
+            messages=messages
+        )
+
+        answer = response.choices[0].message.content
+
+    except Exception as error:
+
+        print("Groq error:", error)
+
+        answer = (
+            "Sorry, I could not connect to the AI right now. "
+            "Please try again."
+        )
+
+    # Save conversation
+    conversation.append(
+        {
+            "role": "user",
+            "content": question
+        }
+    )
+
+    conversation.append(
+        {
+            "role": "assistant",
+            "content": answer
+        }
+    )
+
+    save_conversation(conversation)
+
+    return redirect(url_for("home"))
+
+
+# --------------------------------------------------
+# GENERATE INTERACTIVE QUIZ
+# --------------------------------------------------
 
 @app.route("/generate_quiz", methods=["POST"])
 def generate_quiz():
@@ -423,156 +618,288 @@ def generate_quiz():
     notes = load_notes()
 
     if not topic:
-
-        topic = "the student's study material"
-
+        topic = "the uploaded study material"
 
     notes_context = ""
 
-    if notes.strip():
+    if notes:
 
         notes_context = f"""
 
-Use the following uploaded study material
-as the main source for the quiz.
+Use the following uploaded study material as the main source:
 
-Do not create questions from information
-that is not supported by these notes.
-
-STUDY MATERIAL:
-
--------------------------
 {notes[:50000]}
--------------------------
 
+END OF STUDY MATERIAL.
 """
 
-
     prompt = f"""
-
-You are an AI quiz generator.
-
-Create exactly 5 multiple-choice questions
-for a student.
+Create an interactive study quiz.
 
 Topic:
 {topic}
 
 {notes_context}
 
+Create EXACTLY 5 multiple-choice questions.
+
+Each question must have exactly 4 options.
+
 Return ONLY valid JSON.
 
-The JSON must have exactly this structure:
+Use this exact structure:
 
 {{
-    "title": "Quiz",
-    "questions": [
-        {{
-            "question": "Question text",
-            "options": [
-                "Option A",
-                "Option B",
-                "Option C",
-                "Option D"
-            ],
-            "answer": 0,
-            "explanation": "Short explanation"
-        }}
-    ]
+  "title": "Quiz Title",
+  "questions": [
+    {{
+      "question": "Question text",
+      "options": [
+        "Option A",
+        "Option B",
+        "Option C",
+        "Option D"
+      ],
+      "answer": 0,
+      "explanation": "Short explanation"
+    }}
+  ]
 }}
 
-Important:
+Rules:
 
-- "answer" must be a number.
-- 0 means Option A.
-- 1 means Option B.
-- 2 means Option C.
-- 3 means Option D.
+- answer must be 0, 1, 2, or 3.
+- 0 means first option.
+- 1 means second option.
+- 2 means third option.
+- 3 means fourth option.
 - Exactly 5 questions.
 - Exactly 4 options per question.
-- Do not include answers outside the JSON.
-- Keep questions suitable for students.
+- Keep questions educational.
+- If notes are provided, mainly use the notes.
+- Do not add Markdown.
+- Do not add ```json.
 """
-
 
     try:
 
         response = client.chat.completions.create(
 
-            model="openai/gpt-oss-20b",
+            model=MODEL_NAME,
 
             messages=[
                 {
                     "role": "system",
-                    "content": "Return only valid JSON."
+                    "content": (
+                        "You create valid JSON educational quizzes."
+                    )
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ]
-
         )
 
-        content = (
-            response
-            .choices[0]
-            .message
-            .content
-        )
+        result = response.choices[0].message.content.strip()
 
-
-        # Remove possible markdown fences
-
-        content = content.strip()
-
-        if content.startswith("```"):
-
-            content = content.replace(
+        # Remove accidental code fences
+        if result.startswith("```"):
+            result = result.replace(
                 "```json",
                 ""
-            )
-
-            content = content.replace(
+            ).replace(
                 "```",
                 ""
-            )
+            ).strip()
 
-            content = content.strip()
+        quiz = json.loads(result)
 
+        if "questions" not in quiz:
+            raise ValueError("Invalid quiz format")
 
-        quiz = json.loads(content)
+        if len(quiz["questions"]) != 5:
+            raise ValueError("Quiz must contain 5 questions")
 
+        for question in quiz["questions"]:
 
-        if (
-            "questions" not in quiz
-            or len(quiz["questions"]) != 5
-        ):
+            if len(question["options"]) != 4:
+                raise ValueError(
+                    "Each question needs 4 options"
+                )
 
-            raise ValueError(
-                "Invalid quiz format"
-            )
-
+            if question["answer"] not in [0, 1, 2, 3]:
+                raise ValueError(
+                    "Invalid answer index"
+                )
 
         save_quiz(quiz)
 
-        return redirect(
-            url_for("home")
+        # Remove old flashcards
+        flashcards_path = get_flashcards_file()
+
+        if os.path.exists(flashcards_path):
+            os.remove(flashcards_path)
+
+    except Exception as error:
+
+        print("Quiz generation error:", error)
+
+    return redirect(url_for("home"))
+
+
+# --------------------------------------------------
+# GENERATE INTERACTIVE FLASHCARDS
+# --------------------------------------------------
+
+@app.route("/generate_flashcards", methods=["POST"])
+def generate_flashcards():
+
+    topic = request.form.get(
+        "flashcard_topic",
+        ""
+    ).strip()
+
+    notes = load_notes()
+
+    if not topic:
+        topic = "the uploaded study material"
+
+    notes_context = ""
+
+    if notes:
+
+        notes_context = f"""
+
+Use the following uploaded study material as the MAIN source:
+
+{notes[:50000]}
+
+END OF STUDY MATERIAL.
+"""
+
+    prompt = f"""
+Create interactive study flashcards.
+
+Topic:
+{topic}
+
+{notes_context}
+
+Create EXACTLY 10 flashcards.
+
+Each flashcard must contain:
+
+- question
+- answer
+
+Return ONLY valid JSON.
+
+Use this exact structure:
+
+{{
+  "title": "Flashcards",
+  "cards": [
+    {{
+      "question": "Question text",
+      "answer": "Answer text"
+    }}
+  ]
+}}
+
+Rules:
+
+- Exactly 10 flashcards.
+- Each card must have a clear question.
+- Each card must have a correct and useful answer.
+- Focus on important definitions, concepts, facts,
+  formulas, differences, and revision points.
+- If uploaded notes are available, mainly use the notes.
+- Do not invent information that is not supported by the notes.
+- Keep answers clear and student-friendly.
+- Reply in the same language as the topic/question when possible.
+- Do not add Markdown.
+- Do not add ```json.
+"""
+
+    try:
+
+        response = client.chat.completions.create(
+
+            model=MODEL_NAME,
+
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You create valid JSON educational flashcards."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
 
+        result = response.choices[0].message.content.strip()
 
-    except Exception as e:
+        # Remove accidental code fences
+        if result.startswith("```"):
+            result = result.replace(
+                "```json",
+                ""
+            ).replace(
+                "```",
+                ""
+            ).strip()
 
-        print("Quiz generation error:", e)
+        flashcards = json.loads(result)
 
-        return redirect(
-            url_for("home")
+        if "cards" not in flashcards:
+            raise ValueError(
+                "Invalid flashcard format"
+            )
+
+        if len(flashcards["cards"]) != 10:
+            raise ValueError(
+                "Flashcards must contain 10 cards"
+            )
+
+        # Validate every card
+        for card in flashcards["cards"]:
+
+            if not card.get("question"):
+                raise ValueError(
+                    "Flashcard question missing"
+                )
+
+            if not card.get("answer"):
+                raise ValueError(
+                    "Flashcard answer missing"
+                )
+
+        save_flashcards(flashcards)
+
+        # Remove old quiz
+        quiz_path = get_quiz_file()
+
+        if os.path.exists(quiz_path):
+            os.remove(quiz_path)
+
+    except Exception as error:
+
+        print(
+            "Flashcard generation error:",
+            error
         )
 
+    return redirect(url_for("home"))
 
-# =========================================
+
+# --------------------------------------------------
 # SUBMIT QUIZ
-# =========================================
+# --------------------------------------------------
 
 @app.route("/submit_quiz", methods=["POST"])
 def submit_quiz():
@@ -580,16 +907,10 @@ def submit_quiz():
     quiz = load_quiz()
 
     if not quiz:
-
-        return redirect(
-            url_for("home")
-        )
-
+        return redirect(url_for("home"))
 
     score = 0
-
     results = []
-
 
     for index, question in enumerate(
         quiz["questions"]
@@ -599,421 +920,81 @@ def submit_quiz():
             f"question_{index}"
         )
 
-
-        correct_answer = int(
-            question["answer"]
-        )
-
+        correct_answer = question["answer"]
 
         is_correct = (
             selected is not None
             and int(selected) == correct_answer
         )
 
-
         if is_correct:
-
             score += 1
 
-
-        results.append({
-
-            "question": question["question"],
-
-            "selected": (
-                int(selected)
-                if selected is not None
-                else None
-            ),
-
-            "correct": correct_answer,
-
-            "is_correct": is_correct,
-
-            "explanation":
-                question.get(
+        results.append(
+            {
+                "question": question["question"],
+                "selected": selected,
+                "correct": correct_answer,
+                "options": question["options"],
+                "explanation": question.get(
                     "explanation",
                     ""
-                )
+                ),
+                "is_correct": is_correct
+            }
+        )
 
-        })
-
-
-    quiz["results"] = results
-
-    quiz["score"] = score
-
-    quiz["submitted"] = True
-
+    quiz["result"] = {
+        "score": score,
+        "total": len(quiz["questions"]),
+        "results": results
+    }
 
     save_quiz(quiz)
 
+    return redirect(url_for("home"))
 
-    return redirect(
-        url_for("home")
-    )
 
+# --------------------------------------------------
+# CLEAR CONVERSATION
+# --------------------------------------------------
 
-# =========================================
-# NORMAL AI ASK
-# =========================================
-
-@app.route("/ask", methods=["POST"])
-def ask():
-
-    user_question = request.form.get(
-        "question",
-        ""
-    ).strip()
-
-    study_mode = request.form.get(
-        "mode",
-        "explain"
-    )
-
-
-    if not user_question:
-
-        return redirect(
-            url_for("home")
-        )
-
-
-    notes = load_notes()
-
-    conversation = load_conversation()
-
-
-    base_instruction = """
-
-You are an AI Study Assistant.
-
-Help students understand academic subjects
-clearly and accurately.
-
-Understand questions written in any language.
-
-Reply in the same language as the student's
-question by default.
-
-If the student explicitly asks for another
-language, use that language.
-
-Keep technical terms accurate.
-
-Use simple, student-friendly explanations.
-
-Use headings, bullet points, numbered lists,
-tables, formulas and examples when useful.
-
-"""
-
-
-    if study_mode == "explain":
-
-        instruction = """
-
-Explain the topic clearly.
-
-Start with a simple definition.
-
-Explain step by step.
-
-Give an example when useful.
-
-End with important points to remember.
-
-"""
-
-
-    elif study_mode == "summarize":
-
-        instruction = """
-
-Summarize the topic.
-
-Include:
-
-- Key points
-- Important definitions
-- Important formulas
-- Important examples
-- Exam points
-
-"""
-
-
-    elif study_mode == "doubt":
-
-        instruction = """
-
-The student has a doubt.
-
-Understand what they are confused about.
-
-Explain the concept step by step.
-
-Give an example if useful.
-
-"""
-
-
-    elif study_mode == "notes":
-
-        instruction = """
-
-Use the uploaded study material as the
-main source.
-
-Do not invent information not supported
-by the notes.
-
-Generate important exam questions.
-
-Organize them into:
-
-1. Very Short Answer Questions
-2. Short Answer Questions
-3. Long Answer Questions
-
-"""
-
-
-    elif study_mode == "flashcards":
-
-        instruction = """
-
-Create around 10 useful study flashcards.
-
-Each flashcard should contain:
-
-Question:
-Answer:
-
-Focus on definitions, concepts, facts,
-formulas, differences and revision points.
-
-Use uploaded notes when available.
-
-"""
-
-
-    elif study_mode == "studyplan":
-
-        instruction = """
-
-Create a practical and realistic study plan.
-
-Understand:
-
-- Subject
-- Number of days
-- Available study time
-- Exam date
-- Uploaded study material
-
-Organize using:
-
-1. Study Plan Overview
-2. Daily Schedule
-3. Topics to Study
-4. Practice / Questions
-5. Revision
-6. Final Review
-
-Include reasonable short breaks.
-
-"""
-
-
-    elif study_mode == "quiz":
-
-        return redirect(
-            url_for("home")
-        )
-
-
-    else:
-
-        instruction = """
-
-Answer the student's question clearly.
-
-"""
-
-
-    notes_context = ""
-
-    if notes.strip():
-
-        notes_context = f"""
-
-Uploaded study material:
-
--------------------------
-{notes[:50000]}
--------------------------
-
-"""
-
-
-    system_prompt = (
-        base_instruction
-        + instruction
-        + notes_context
-    )
-
-
-    messages = [
-
-        {
-            "role": "system",
-            "content": system_prompt
-        }
-
-    ]
-
-
-    for message in conversation[-10:]:
-
-        messages.append({
-
-            "role": message["role"],
-
-            "content": message["content"]
-
-        })
-
-
-    messages.append({
-
-        "role": "user",
-
-        "content": user_question
-
-    })
-
-
-    try:
-
-        response = client.chat.completions.create(
-
-            model="openai/gpt-oss-20b",
-
-            messages=messages
-
-        )
-
-        ai_response = (
-            response
-            .choices[0]
-            .message
-            .content
-        )
-
-
-    except Exception as e:
-
-        print("Groq error:", e)
-
-        ai_response = """
-
-Sorry, I could not process your request
-right now.
-
-Please try again in a moment.
-
-"""
-
-
-    conversation.append({
-
-        "role": "user",
-
-        "content": user_question
-
-    })
-
-
-    conversation.append({
-
-        "role": "assistant",
-
-        "content": ai_response
-
-    })
-
-
-    save_conversation(
-        conversation
-    )
-
-
-    return redirect(
-        url_for("home")
-    )
-
-
-# =========================================
-# CLEAR
-# =========================================
-
-@app.route("/clear")
+@app.route("/clear", methods=["POST"])
 def clear():
 
-    user_folder = get_user_folder()
+    folder = get_user_folder()
+
+    if os.path.exists(folder):
+
+        for filename in os.listdir(folder):
+
+            path = os.path.join(
+                folder,
+                filename
+            )
+
+            if os.path.isfile(path):
+                os.remove(path)
+
+    return redirect(url_for("home"))
 
 
-    for filename in os.listdir(
-        user_folder
-    ):
+# --------------------------------------------------
+# FILE TOO LARGE
+# --------------------------------------------------
 
-        file_path = os.path.join(
-            user_folder,
-            filename
-        )
+@app.errorhandler(413)
+def file_too_large(error):
 
-
-        if os.path.isfile(file_path):
-
-            try:
-
-                os.remove(file_path)
-
-            except Exception:
-
-                pass
-
-
-    return redirect(
-        url_for("home")
+    return (
+        "File is too large. Maximum size is 10 MB.",
+        413
     )
 
 
-# =========================================
-# FILE TOO LARGE
-# =========================================
-
-@app.errorhandler(413)
-def too_large(error):
-
-    return """
-
-    <h2>File is too large.</h2>
-
-    <p>
-    Please upload a PDF or DOCX file
-    smaller than 10 MB.
-    </p>
-
-    <a href="/">Go Back</a>
-
-    """, 413
-
-
-# =========================================
-# RUN
-# =========================================
+# --------------------------------------------------
+# RUN APP
+# --------------------------------------------------
 
 if __name__ == "__main__":
 
