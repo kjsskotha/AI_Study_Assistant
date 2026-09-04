@@ -1,19 +1,51 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 from groq import Groq
 import os
 
 app = Flask(__name__)
 
-# Get API key from environment variable
+# Secret key for Flask sessions
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-this-secret-key")
+
+# Get Groq API key from environment variable
 api_key = os.environ.get("GROQ_API_KEY")
 
 # Connect to Groq
 client = Groq(api_key=api_key)
 
 
+system_instruction = """
+You are an AI Study Assistant.
+
+Help students understand their subjects.
+
+Rules:
+1. Explain concepts clearly and simply.
+2. Break difficult topics into smaller parts.
+3. Use examples when useful.
+4. Use headings and bullet points.
+5. Be educational and easy to understand.
+6. Remember the previous messages in the current conversation.
+7. Understand follow-up questions using the previous conversation as context.
+"""
+
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+
+    # Create conversation history if it does not exist
+    if "conversation" not in session:
+        session["conversation"] = [
+            {
+                "role": "system",
+                "content": system_instruction
+            }
+        ]
+
+    return render_template(
+        "index.html",
+        answer=None
+    )
 
 
 @app.route("/ask", methods=["POST"])
@@ -26,31 +58,26 @@ def ask():
         instruction = """
         Explain the topic clearly for a student.
         Use simple language, headings, bullet points and examples.
-        Break difficult ideas into smaller parts.
         """
 
     elif study_mode == "summarize":
         instruction = """
-        Summarize the given topic clearly.
+        Summarize the topic clearly.
         Include only the important points.
         Use headings and bullet points.
-        Keep the explanation easy to study and remember.
         """
 
     elif study_mode == "quiz":
         instruction = """
         Create a short quiz about the given topic.
         Give 5 questions.
-        Mix multiple-choice and short-answer questions.
-        Do not immediately reveal the answers.
-        At the end, provide an answer key separately.
+        Include an answer key at the end.
         """
 
     elif study_mode == "doubt":
         instruction = """
         Answer the student's doubt clearly.
         Explain the concept step by step.
-        Use a simple example if useful.
         """
 
     else:
@@ -58,36 +85,57 @@ def ask():
         Help the student understand the topic clearly.
         """
 
-    system_instruction = f"""
-    You are an AI Study Assistant.
+    # Get existing conversation
+    conversation = session.get("conversation", [])
 
-    {instruction}
+    # Add the current mode instruction
+    conversation.append({
+        "role": "system",
+        "content": instruction
+    })
 
-    Be educational, accurate and easy to understand.
-    Do not make the explanation unnecessarily complicated.
-    """
+    # Add user's question
+    conversation.append({
+        "role": "user",
+        "content": user_question
+    })
 
+    # Send complete conversation to Groq
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
-        messages=[
-            {
-                "role": "system",
-                "content": system_instruction
-            },
-            {
-                "role": "user",
-                "content": user_question
-            }
-        ]
+        messages=conversation
     )
 
+    # Get AI answer
     answer = response.choices[0].message.content
+
+    # Save AI answer in conversation
+    conversation.append({
+        "role": "assistant",
+        "content": answer
+    })
+
+    # Save updated conversation
+    session["conversation"] = conversation
+    session.modified = True
 
     return render_template(
         "index.html",
         question=user_question,
         answer=answer,
         selected_mode=study_mode
+    )
+
+
+@app.route("/clear")
+def clear():
+
+    # Clear conversation memory
+    session.pop("conversation", None)
+
+    return render_template(
+        "index.html",
+        answer=None
     )
 
 
